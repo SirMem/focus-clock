@@ -77,6 +77,11 @@
             </view>
           </view>
 
+          <!-- 滑动提示渐变（永久暗示，滑动时渐隐） -->
+          <view class="swipe-hint-edge {{item._hintDone ? 'hint-fade' : ''}}"
+                style="opacity: {{item._swipePct ? 1 - item._swipePct : 1}}">
+          </view>
+
           <!-- 可滑动任务卡片 -->
           <view
             class="swipe-foreground {{item._swipeNoTrans ? 'swipe-no-trans' : ''}}"

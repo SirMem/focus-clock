@@ -60,6 +60,11 @@ Page({
     });
   },
 
+  onReady() {
+    // 页面就绪后，延迟触发首个任务的"轻推"提示动画
+    this._hintTimer = setTimeout(() => this._doSwipeHint(), 1200);
+  },
+
   // ─── 计算属性 ───
   // (WeChat 不支持 getter 用于 WXML，需通过 _updateComputed 手工计算)
 
@@ -238,6 +243,39 @@ Page({
       tasks.splice(idx, 1);
       this.saveTasks(tasks);
     }
+  },
+
+  // ─── 首卡轻推提示动画 ───
+
+  _doSwipeHint() {
+    const tasks = this.data.filteredTasks;
+    if (!tasks || tasks.length === 0) return;
+    const id = tasks[0].id;
+    const idx = this.data.tasks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+
+    // 先让提示渐变闪烁
+    this.setData({
+      [`tasks[${idx}]._hintDone`]: false,
+    });
+
+    // 短延迟后轻推（向左滑 35rpx）
+    setTimeout(() => {
+      this.setData({
+        [`tasks[${idx}]._swipeNoTrans`]: false,
+        [`tasks[${idx}]._swipeX`]: -35,
+        [`tasks[${idx}]._swipePct`]: 0.22,
+      });
+    }, 200);
+
+    // 保持 500ms 后弹回
+    setTimeout(() => {
+      this.setData({
+        [`tasks[${idx}]._swipeX`]: 0,
+        [`tasks[${idx}]._swipePct`]: 0,
+        [`tasks[${idx}]._hintDone`]: true,
+      });
+    }, 700);
   },
 
   onFilterTap(e) {

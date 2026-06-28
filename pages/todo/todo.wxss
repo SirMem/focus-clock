@@ -213,6 +213,33 @@
   transition: none;
 }
 
+/* 滑动提示指示器（右边缘微渐变，永久暗示可滑动） */
+.swipe-hint-edge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 56rpx;
+  background: linear-gradient(90deg, transparent, rgba(255, 59, 48, 0.09));
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.swipe-hint-edge.hint-fade {
+  opacity: 0 !important;
+  transition: opacity 0.8s ease;
+}
+
+/* 首个任务卡的提示脉冲（轻推前闪烁） */
+@keyframes hint-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.swipe-hint-edge.hint-pulse {
+  animation: hint-pulse 1s ease-in-out 2;
+}
+
 /* 勾选框 */
 .task-checkbox {
   width: 44rpx;
@@ -236,6 +263,7 @@
 .task-content {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .task-title {
@@ -244,6 +272,9 @@
   color: #1A1A2E;
   display: block;
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-done {
