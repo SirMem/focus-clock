@@ -1,6 +1,7 @@
 {
   "pages": [
-    "pages/focus/focus"
+    "pages/focus/focus",
+    "pages/todo/todo"
   ],
   "window": {
     "navigationStyle": "custom",

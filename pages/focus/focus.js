@@ -211,7 +211,21 @@ Page({
 
   onTabTap(e) {
     const key = e.currentTarget.dataset.key;
-    this.setData({ activeTab: key });
+    // 当前就在 focus 页，不做操作
+    if (key === 'focus') {
+      this.setData({ activeTab: key });
+      return;
+    }
+    // 其他 tab → 跳转对应页面
+    const pageMap = {
+      todo: '/pages/todo/todo',
+    };
+    const url = pageMap[key];
+    if (url) {
+      wx.redirectTo({ url });
+    } else {
+      wx.showToast({ title: '开发中...', icon: 'none' });
+    }
   },
 
   onTabChange(e) {

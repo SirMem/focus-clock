@@ -1,0 +1,148 @@
+<!-- ===== 页面容器（flex 撑满全屏） ===== -->
+<view class="page-wrapper">
+
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left">
+        <view class="nav-placeholder"></view>
+      </view>
+      <view class="nav-title">待办事项</view>
+      <view class="nav-right" bind:tap="onMenuTap">
+        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 待办内容区域（flex:1，相对定位用于悬浮子元素） ===== -->
+  <view class="todo-area">
+
+    <!-- ===== 快速添加输入框 ===== -->
+    <view class="quick-add">
+      <view class="quick-add-inner">
+        <input
+          class="add-input"
+          placeholder="添加新任务..."
+          placeholder-style="color:#C0C4CC;font-size:14px"
+          value="{{input}}"
+          bindinput="onInputChange"
+          bindconfirm="onAddTask"
+          confirm-type="done"
+        />
+        <view
+          class="add-btn {{hasInput ? 'add-btn-active' : ''}}"
+          bind:tap="onAddTask"
+        >
+          <t-icon name="add" size="28rpx" color="{{hasInput ? '#fff' : '#C0C4CC'}}" />
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 筛选标签 ===== -->
+    <view class="filter-chips">
+      <view
+        wx:for="{{filters}}"
+        wx:key="key"
+        class="chip {{item.key === filter ? 'chip-active' : ''}}"
+        bind:tap="onFilterTap"
+        data-key="{{item.key}}"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 任务列表（滚动区域） ===== -->
+    <scroll-view class="task-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+      <!-- 空状态 -->
+      <view wx:if="{{filteredTasks.length === 0}}" class="empty-state">
+        <view class="empty-icon-wrap">
+          <text class="empty-icon">📝</text>
+        </view>
+        <text class="empty-text">{{emptyText}}</text>
+      </view>
+
+      <!-- 任务项列表 -->
+      <view wx:else class="task-list">
+        <view
+          wx:for="{{filteredTasks}}"
+          wx:key="id"
+          class="task-item {{item.done ? 'task-done' : ''}}"
+        >
+          <!-- 勾选框 -->
+          <view
+            class="task-checkbox {{item.done ? 'checkbox-checked' : ''}}"
+            bind:tap="onToggleTask"
+            data-id="{{item.id}}"
+          >
+            <t-icon wx:if="{{item.done}}" name="check" size="24rpx" color="#fff" />
+          </view>
+
+          <!-- 任务内容 -->
+          <view class="task-content">
+            <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
+            <view class="task-meta">
+              <text class="meta-pomodoro">🍅 ×{{item.completed}}/{{item.pomodoros}}</text>
+            </view>
+          </view>
+
+          <!-- 优先级指示 + 删除 -->
+          <view class="task-actions">
+            <view
+              class="priority-dot"
+              style="background: {{priorityColors[item.priority]}}"
+            ></view>
+            <view
+              class="delete-btn"
+              bind:tap="onDeleteTask"
+              data-id="{{item.id}}"
+            >
+              <t-icon name="delete" size="28rpx" color="#FF3B30" />
+            </view>
+          </view>
+
+          <!-- 滑动提示（仅未完成任务） -->
+          <view wx:if="{{!item.done}}" class="swipe-hint">
+            <text>←滑动</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 底部占位空间（防止内容被底部栏遮挡） -->
+      <view class="scroll-bottom-space"></view>
+    </scroll-view>
+
+    <!-- ===== 底部摘要栏（悬浮在列表之上） ===== -->
+    <view class="summary-bar">
+      <text class="summary-left">
+        已完成 <text class="summary-num-green">{{doneCount}}</text>/{{tasks.length}}
+      </text>
+      <text class="summary-right">
+        今日专注 <text class="summary-num-blue">{{totalHours}}h{{totalMins}}m</text>
+      </text>
+    </view>
+
+    <!-- ===== 悬浮添加按钮 (FAB) ===== -->
+    <view class="fab-btn" bind:tap="onFabTap">
+      <t-icon name="add" size="44rpx" color="#fff" />
+    </view>
+
+  </view>
+
+  <!-- ===== 底部 Tab Bar ===== -->
+  <view class="bottom-tab-bar">
+    <view
+      wx:for="{{tabItems}}"
+      wx:key="key"
+      class="tab-item {{item.key === 'todo' ? 'tab-item-active' : ''}}"
+      bind:tap="onTabTap"
+      data-key="{{item.key}}"
+    >
+      <t-icon name="{{item.icon}}" size="48rpx" color="{{item.key === 'todo' ? '#4A90D9' : '#C0C4CC'}}" />
+      <text class="tab-label">{{item.label}}</text>
+      <view wx:if="{{item.key === 'todo'}}" class="tab-dot"></view>
+    </view>
+  </view>
+
+</view>
