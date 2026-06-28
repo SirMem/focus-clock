@@ -202,17 +202,31 @@ Page({
   _setSwipeProp(id, prop, value) {
     const idx = this.data.tasks.findIndex(t => t.id === id);
     if (idx === -1) return;
-    this.setData({ [`tasks[${idx}].${prop}`]: value });
+    const update = { [`tasks[${idx}].${prop}`]: value };
+    // 同步更新 filteredTasks 路径，确保 WXML 重绘
+    const fidx = this.data.filteredTasks.findIndex(t => t.id === id);
+    if (fidx !== -1) {
+      update[`filteredTasks[${fidx}].${prop}`] = value;
+    }
+    this.setData(update);
   },
 
   _resetSwipeState(id) {
     const idx = this.data.tasks.findIndex(t => t.id === id);
     if (idx === -1) return;
-    this.setData({
+    const update = {
       [`tasks[${idx}]._swipeNoTrans`]: false,
       [`tasks[${idx}]._swipeX`]: 0,
       [`tasks[${idx}]._swipePct`]: 0,
-    });
+    };
+    // 同步更新 filteredTasks 路径
+    const fidx = this.data.filteredTasks.findIndex(t => t.id === id);
+    if (fidx !== -1) {
+      update[`filteredTasks[${fidx}]._swipeNoTrans`] = false;
+      update[`filteredTasks[${fidx}]._swipeX`] = 0;
+      update[`filteredTasks[${fidx}]._swipePct`] = 0;
+    }
+    this.setData(update);
   },
 
   _toggleTaskById(id) {

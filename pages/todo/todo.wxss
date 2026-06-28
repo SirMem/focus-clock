@@ -122,7 +122,6 @@
 .task-scroll {
   flex: 1;
   height: 0;
-  padding: 0 32rpx;
 }
 
 /* ===== 空状态 ===== */
@@ -160,7 +159,7 @@
   display: flex;
   flex-direction: column;
   gap: 16rpx;
-  padding-bottom: 120rpx;
+  padding: 0 32rpx 120rpx;
 }
 
 /* ===== 滑动删除容器 ===== */
@@ -168,7 +167,6 @@
   position: relative;
   overflow: hidden;
   border-radius: 20rpx;
-  margin: 0 32rpx;
   margin-bottom: 16rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
