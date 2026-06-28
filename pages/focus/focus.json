@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "circular-timer": "../../components/circular-timer/circular-timer"
+  }
+}

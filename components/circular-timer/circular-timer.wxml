@@ -1,0 +1,15 @@
+<!-- 使用 Canvas 2D 实现的环形进度计时器 -->
+<view class="timer-container">
+  <canvas 
+    type="2d" 
+    id="timerCanvas" 
+    class="timer-canvas"
+    style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"
+  ></canvas>
+  
+  <!-- 中间时间文字 -->
+  <view class="time-display">
+    <text class="time-text">{{formattedTime}}</text>
+    <text class="state-label">{{stateLabel}}</text>
+  </view>
+</view>

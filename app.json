@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/focus/focus"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#F5F7FA",
+    "backgroundColorTop": "#F5F7FA",
+    "backgroundColorBottom": "#F5F7FA"
+  },
+  "usingComponents": {
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-icon": "tdesign-miniprogram/icon/icon",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-cell": "tdesign-miniprogram/cell/cell",
+    "t-navbar": "tdesign-miniprogram/navbar/navbar",
+    "t-progress": "tdesign-miniprogram/progress/progress",
+    "t-tab-bar": "tdesign-miniprogram/tab-bar/tab-bar",
+    "t-tab-bar-item": "tdesign-miniprogram/tab-bar-item/tab-bar-item"
+  },
+  "sitemapLocation": "sitemap.json"
+}

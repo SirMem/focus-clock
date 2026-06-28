@@ -1,0 +1,260 @@
+/* ===== 自定义导航栏 ===== */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  height: 88rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #F0F2F5;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.nav-left, .nav-right {
+  width: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+/* ===== 页面滚动容器 ===== */
+.page-scroll {
+  flex: 1;
+  height: 0;
+  background: #F5F7FA;
+}
+
+/* ===== 计时器区域 ===== */
+.timer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0 48rpx;
+}
+.current-task {
+  margin-top: 20rpx;
+  padding: 0 48rpx;
+}
+.task-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #4A4A6A;
+  text-align: center;
+}
+
+/* ===== 音效选择 ===== */
+.sound-section {
+  padding: 0 32rpx 24rpx;
+}
+.sound-scroll {
+  display: flex;
+  flex-direction: row;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sound-item {
+  display: inline-flex;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: #fff;
+  color: #8A8A9A;
+  border: 2rpx solid #E0E4EA;
+  transition: all 0.2s;
+}
+.sound-active {
+  background: #EBF4FF;
+  color: #4A90D9;
+  border-color: #4A90D9;
+}
+
+/* ===== 模式切换 ===== */
+.mode-toggle {
+  display: flex;
+  margin: 0 32rpx 32rpx;
+  padding: 8rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+.mode-btn {
+  flex: 1;
+  padding: 20rpx 0;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s;
+}
+.mode-btn-active {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ===== 控制按钮 ===== */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48rpx;
+  padding: 0 32rpx 40rpx;
+}
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  border: none;
+}
+.ctrl-btn-secondary {
+  width: 112rpx;
+  height: 112rpx;
+  background: #fff;
+  border: 4rpx solid #E0E4EA;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.ctrl-btn-primary {
+  width: 160rpx;
+  height: 160rpx;
+  box-shadow: 0 8rpx 32rpx rgba(74,144,217,0.3);
+}
+.ctrl-icon {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ctrl-icon image {
+  width: 44rpx;
+  height: 44rpx;
+}
+.ctrl-icon-primary {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ctrl-icon-primary image {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+/* ===== 番茄进度点 ===== */
+.progress-dots {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 32rpx;
+}
+.dots-row {
+  display: flex;
+  gap: 16rpx;
+}
+.dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+.dot-active {
+  background: #4A90D9;
+  transform: scale(1.2);
+}
+.dots-label {
+  font-size: 24rpx;
+  color: #8A8A9A;
+  margin-top: 12rpx;
+}
+
+/* ===== 统计数据 ===== */
+.stats-row {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 32rpx 32rpx;
+}
+.stat-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+.stat-icon {
+  font-size: 40rpx;
+}
+.stat-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.stat-label {
+  font-size: 24rpx;
+  color: #8A8A9A;
+}
+.stat-value {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+
+/* ===== AI教练卡片 ===== */
+.ai-card {
+  margin: 0 32rpx 32rpx;
+  padding: 32rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 16rpx rgba(74,144,217,0.10);
+}
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+.ai-avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4A90D9, #6C5CE7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  color: #fff;
+  font-weight: 700;
+}
+.ai-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.ai-badge {
+  margin-left: auto;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: #EBF4FF;
+  color: #4A90D9;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+.ai-tip {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #4A4A6A;
+}
