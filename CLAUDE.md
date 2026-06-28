@@ -62,6 +62,92 @@ Prefer editing the root Mini Program files when working on the native app. Prefe
 
 ---
 
+## Recent Session Context (2026-06-28)
+
+> 以下是从最近一次开发会话中提取的关键上下文，供下一轮对话快速接手。
+
+### ✅ 已完成的修复与新增
+
+| 类别 | 内容 | 说明 | 涉及文件 |
+|------|------|------|---------|
+| 🐛 修复 | **计时器滚动** | `timer-section` 移出 `<scroll-view>`，外层用 `page-wrapper` (flex column, 100vh) 固定布局 | `focus.wxml`, `focus.wxss` |
+| 🐛 修复 | **图标不显示** | `data:image/svg+xml` 替换为 TDesign `<t-icon>` 组件 | `focus.wxml`, `focus.js` |
+| ✨ 新增 | **待办页面 (Todo)** | 完整复刻 Figma TodoScreen 设计，含 Quick Add + 筛选 + 任务 CRUD + 摘要栏 + FAB + 底部 Tab 导航 | `pages/todo/*` (4 files) |
+| 🔗 联动 | **Tab 导航** | focus 页点击"待办"Tab → wx.redirectTo 跳转 todo 页；todo 页点击"专注"Tab → 跳回 focus 页 | `pages/focus/focus.js` |
+
+### 📐 当前页面结构
+
+**专注页 (pages/focus/focus.wxml)**:
+```
+page-wrapper (flex column, 100vh, overflow:hidden)
+├── nav-shell (固定)
+├── timer-section (固定，在 scroll-view 之外)
+├── scroll-view (flex:1, height:0, 其余内容滚动)
+└── bottom-tab-bar (自定义，用 t-icon)
+```
+
+**待办页 (pages/todo/todo.wxml)**:
+```
+page-wrapper (flex column, 100vh, overflow:hidden)
+├── nav-shell (固定，自定义导航栏)
+├── quick-add (固定，输入框 + 发送按钮)
+├── filter-chips (固定，全部/进行中/已完成)
+├── task-scroll (flex:1, 可滚动任务列表)
+│   ├── (each task) checkbox + text + 🍅 + priority-dot + delete-btn
+│   └── empty-state (无任务时显示)
+├── summary-bar (固定，已完成 X/Y | 今日专注 XhYm)
+├── fab-btn (固定，悬浮渐变按钮)
+└── bottom-tab-bar (自定义，5个 Tab)
+```
+
+### 🔑 icon 映射表
+
+| 控件 | 图标名 | TDesign 组件 |
+|------|--------|-------------|
+| 重置按钮 | `refresh` | `<t-icon name="refresh">` |
+| 播放按钮 | `play-circle-stroke` | `<t-icon name="play-circle-stroke">` |
+| 暂停按钮 | `pause-circle-stroke` | `<t-icon name="pause-circle-stroke">` |
+| 跳过按钮 | `next` | `<t-icon name="next">` |
+| Tab:专注 | `focus` | `<t-icon name="focus">` |
+| Tab:待办 | `task` | `<t-icon name="task">` |
+| Tab:统计 | `chart-bar` | `<t-icon name="chart-bar">` |
+| Tab:日记 | `edit-1` | `<t-icon name="edit-1">` |
+| Tab:我的/教练 | `user-avatar` | `<t-icon name="user-avatar">` |
+
+### ⚠️ 已知注意事项
+
+1. **DevTools 缓存问题**：通过 AI 外部修改文件后，DevTools 可能仍显示旧版本。解决：`工具 → 清除缓存 → 清除全部缓存 (Ctrl+Shift+Delete)`，再点击`编译` (Ctrl+B)
+2. **JS 中不再有 SVG 生成函数**：`svgToDataUri()` 和 `createTabIcon()` 已被删除；`TAB_ITEMS` 的 `icon` 字段直接使用 t-icon 名称字符串
+3. **t-icon 组件已全局注册**：`app.json` 的 `usingComponents` 中声明了 `"t-icon": "tdesign-miniprogram/icon/icon"`，页面无需重复注册
+4. **scroll-view 约束**：`page-scroll` 必须同时有 `flex: 1` 和 `height: 0`，否则微信 scroll-view 高度计算异常
+5. **组件路径**：TDesign 组件在 `miniprogram_npm/tdesign-miniprogram/` 下，勿手动编辑（npm 构建产物）
+6. **WXML 不能使用函数调用**：如 `.trim()`、`Array.filter()` 等方法不能在 `{{ }}` 中使用；需通过 JS 预计算后 setData 传递
+7. **CSS :hover 在移动端无效**：触摸设备无 hover 状态，删除按钮不使用 `:hover` 控制显隐，改为直接常显（低透明度）
+8. **计算属性需手动同步**：微信 Page 不支持 ES6 getter 用于 WXML 数据绑定；`_updateComputed()` 方法在每次数据变更后手动调用
+9. **wx.redirectTo 跳转**：Tab 切换使用 `wx.redirectTo` 而非 `wx.switchTab`（因未使用原生 tabBar），注意这会替换页面栈
+
+### 📁 关键文件位置
+
+| 文件 | 说明 |
+|------|------|
+| `pages/focus/focus.wxml` (134行) | 专注页页面结构，page-wrapper / timer-section / scroll-view / bottom-tab-bar |
+| `pages/focus/focus.wxss` (383行) | 专注页样式，flex 布局定义 |
+| `pages/focus/focus.js` (244行) | 计时器逻辑 + TAB_ITEMS 定义 |
+| `components/circular-timer/*` | Canvas 2D 环形计时器组件 |
+| `pages/todo/todo.wxml` (~110行) | 待办页页面结构，nav + 输入框 + 筛选 + 任务列表 + 摘要 + FAB + TabBar |
+| `pages/todo/todo.wxss` (~330行) | 待办页样式，输入框/筛选/任务项/FAB 等 |
+| `pages/todo/todo.js` (~190行) | 待办页逻辑，CRUD + 筛选 + 计算属性 |
+| `docs/` | 产品文档 (PRD / 模块规划 / 架构) |
+| `src/` | Figma Make 导出 → React/Vite 原型 |
+
+### 🚧 后续可能的开发方向
+
+- ✅ **待办页面 (Todo)** — 已完成，含 CRUD + 筛选 + 摘要
+- 🔲 其他页面实现（统计/日记/我的/教练）
+- 🔲 数据持久化（wx.setStorage）
+- 🔲 音效选择功能完善
+- 🔲 任务与番茄钟联动：开始专注时关联待办任务
+- 🔲 AI 教练卡片交互（focus 页已有布局）
 ## 🗺️ 项目全景梳理
 
 ### 一、项目背景
@@ -147,6 +233,12 @@ docs/
    ├── focus.wxss    #   页面样式
    └── focus.json    #   页面配置
 
+📁 pages/todo/       # ✅ 待办页（已完成，可交互）
+   ├── todo.js       #   任务 CRUD（增/删/改/筛选）
+   ├── todo.wxml     #   页面结构（输入框→筛选→任务列表→摘要栏→FAB→TabBar）
+   ├── todo.wxss     #   页面样式
+   └── todo.json     #   页面配置
+
 📁 components/circular-timer/  # 环形进度组件
    ├── circular-timer.js       # Canvas 2D 绘制
    ├── circular-timer.wxml     # Canvas + 文字叠加
@@ -164,11 +256,12 @@ Figma 设计软件
                           │
                           │ 提供：设计视觉参考、交互逻辑、设计 Tokens
                           ▼
-                pages/focus/*  (微信小程序原生实现)
+                pages/focus/* + pages/todo/*  (微信小程序原生实现)
                           │
                           ├─UI 组件库：TDesign Miniprogram
                           ├─Canvas 绘制：circular-timer 组件
-                          └─逻辑：Page Data + setInterval
+                          ├─Todo 逻辑：Page Data + _updateComputed
+                          └─Tab 切换：wx.redirectTo 多页面架构
 ```
 
 ---
