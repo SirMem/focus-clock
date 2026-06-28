@@ -163,23 +163,54 @@
   padding-bottom: 120rpx;
 }
 
-.task-item {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 20rpx 24rpx;
+/* ===== 滑动删除容器 ===== */
+.swipe-wrap {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  border-radius: 20rpx;
+  margin: 0 32rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
-.task-done {
-  background: #F5F7FA;
+/* 红色删除背景（渐变浅红，滑动时渐显） */
+.swipe-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  transition: opacity 0.15s ease;
 }
 
-.task-item::after {
-  display: none;
+.swipe-bg-inner {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 可滑动前景卡片 */
+.swipe-foreground {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 24rpx 20rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+
+.swipe-foreground.swipe-no-trans {
+  transition: none;
 }
 
 /* 勾选框 */
@@ -246,27 +277,7 @@
   border-radius: 50%;
 }
 
-.delete-btn {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 59, 48, 0.08);
-  opacity: 0.6;
-}
-
-/* 滑动提示 */
-.swipe-hint {
-  position: absolute;
-  right: 24rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 20rpx;
-  color: #C0C4CC;
-  opacity: 0.6;
-}
+/* 滑动相关样式已移至上方 .swipe-wrap / .swipe-bg / .swipe-foreground */
 
 /* ===== 底部摘要栏 ===== */
 .summary-bar {

@@ -63,48 +63,51 @@
         <text class="empty-text">{{emptyText}}</text>
       </view>
 
-      <!-- 任务项列表 -->
+      <!-- 任务项列表（滑动删除） -->
       <view wx:else class="task-list">
         <view
           wx:for="{{filteredTasks}}"
           wx:key="id"
-          class="task-item {{item.done ? 'task-done' : ''}}"
+          class="swipe-wrap"
         >
-          <!-- 勾选框 -->
+          <!-- 红色删除背景（滑动时露出） -->
+          <view class="swipe-bg" style="opacity: {{item._swipePct || 0}}">
+            <view class="swipe-bg-inner">
+              <t-icon name="delete" size="40rpx" color="#fff" />
+            </view>
+          </view>
+
+          <!-- 可滑动任务卡片 -->
           <view
-            class="task-checkbox {{item.done ? 'checkbox-checked' : ''}}"
-            bind:tap="onToggleTask"
+            class="swipe-foreground {{item._swipeNoTrans ? 'swipe-no-trans' : ''}}"
+            style="transform: translateX({{item._swipeX || 0}}px)"
             data-id="{{item.id}}"
+            bind:touchstart="onTouchStart"
+            bind:touchmove="onTouchMove"
+            bind:touchend="onTouchEnd"
           >
-            <t-icon wx:if="{{item.done}}" name="check" size="24rpx" color="#fff" />
-          </view>
-
-          <!-- 任务内容 -->
-          <view class="task-content">
-            <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
-            <view class="task-meta">
-              <text class="meta-pomodoro">🍅 ×{{item.completed}}/{{item.pomodoros}}</text>
-            </view>
-          </view>
-
-          <!-- 优先级指示 + 删除 -->
-          <view class="task-actions">
+            <!-- 勾选框 -->
             <view
-              class="priority-dot"
-              style="background: {{priorityColors[item.priority]}}"
-            ></view>
-            <view
-              class="delete-btn"
-              bind:tap="onDeleteTask"
-              data-id="{{item.id}}"
+              class="task-checkbox {{item.done ? 'checkbox-checked' : ''}}"
             >
-              <t-icon name="delete" size="28rpx" color="#FF3B30" />
+              <t-icon wx:if="{{item.done}}" name="check" size="24rpx" color="#fff" />
             </view>
-          </view>
 
-          <!-- 滑动提示（仅未完成任务） -->
-          <view wx:if="{{!item.done}}" class="swipe-hint">
-            <text>←滑动</text>
+            <!-- 任务内容 -->
+            <view class="task-content">
+              <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
+              <view class="task-meta">
+                <text class="meta-pomodoro">🍅 ×{{item.completed}}/{{item.pomodoros}}</text>
+              </view>
+            </view>
+
+            <!-- 优先级指示（仅保留圆点） -->
+            <view class="task-actions">
+              <view
+                class="priority-dot"
+                style="background: {{priorityColors[item.priority]}}"
+              ></view>
+            </view>
           </view>
         </view>
       </view>

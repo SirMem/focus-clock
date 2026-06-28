@@ -123,32 +123,121 @@ Page({
     this.setData({ input: '' });
   },
 
+  // ─── 滑动删除手势 ───
+
+  onTouchStart(e) {
+    const touch = e.touches[0];
+    this._swipeStartX = touch.clientX;
+    this._swipeStartY = touch.clientY;
+    this._swipeStartTime = Date.now();
+    this._swipingId = e.currentTarget.dataset.id;
+
+    // 关闭过渡动画，手指跟手
+    this._setSwipeProp(this._swipingId, '_swipeNoTrans', true);
+  },
+
+  onTouchMove(e) {
+    if (!this._swipingId) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - this._swipeStartX;
+    const deltaY = touch.clientY - this._swipeStartY;
+
+    // 竖向滑动为主 → 不处理（让 scroll-view 正常滚动）
+    if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) return;
+
+    const maxSwipe = 180;
+    const swipeX = Math.max(-maxSwipe, Math.min(maxSwipe, deltaX));
+    const swipePct = Math.min(1, Math.abs(swipeX) / maxSwipe);
+
+    this._setSwipeProp(this._swipingId, '_swipeX', swipeX);
+    this._setSwipeProp(this._swipingId, '_swipePct', swipePct);
+  },
+
+  onTouchEnd() {
+    if (!this._swipingId) return;
+    const id = this._swipingId;
+    this._swipingId = null;
+
+    const tasks = this.data.tasks;
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const absSwipe = Math.abs(task._swipeX || 0);
+    const swipeX = task._swipeX || 0;
+
+    if (absSwipe < 10) {
+      // 轻点 → 切换完成状态
+      this._resetSwipeState(id);
+      this._toggleTaskById(id);
+    } else if (absSwipe > 80) {
+      // 超过阈值 → 飞出后删除
+      const flyDir = swipeX > 0 ? 1 : -1;
+      this._setSwipeProp(id, '_swipeNoTrans', false);
+      this._setSwipeProp(id, '_swipeX', flyDir * 400);
+      this._setSwipeProp(id, '_swipePct', 1);
+      setTimeout(() => this._deleteTaskById(id), 300);
+    } else {
+      // 未达阈值 → 弹回
+      this._resetSwipeState(id);
+    }
+  },
+
+  // ─── 保留原有事件处理（兼容入口） ───
+
   onToggleTask(e) {
-    const id = e.currentTarget.dataset.id;
+    this._toggleTaskById(e.currentTarget.dataset.id);
+  },
+
+  onDeleteTask(e) {
+    this._deleteTaskById(e.currentTarget.dataset.id, true);
+  },
+
+  // ─── 内部辅助方法 ───
+
+  _setSwipeProp(id, prop, value) {
+    const idx = this.data.tasks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    this.setData({ [`tasks[${idx}].${prop}`]: value });
+  },
+
+  _resetSwipeState(id) {
+    const idx = this.data.tasks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    this.setData({
+      [`tasks[${idx}]._swipeNoTrans`]: false,
+      [`tasks[${idx}]._swipeX`]: 0,
+      [`tasks[${idx}]._swipePct`]: 0,
+    });
+  },
+
+  _toggleTaskById(id) {
     const tasks = this.deepCloneTasks(this.data.tasks);
     const idx = tasks.findIndex(t => t.id === id);
-    if (idx === INVALID_ID) return;
-
+    if (idx === -1) return;
     tasks[idx] = { ...tasks[idx], done: !tasks[idx].done };
     this.saveTasks(tasks);
   },
 
-  onDeleteTask(e) {
-    const id = e.currentTarget.dataset.id;
+  _deleteTaskById(id, showConfirm) {
     const tasks = this.deepCloneTasks(this.data.tasks);
     const idx = tasks.findIndex(t => t.id === id);
-    if (idx === INVALID_ID) return;
+    if (idx === -1) return;
 
-    wx.showModal({
-      title: '删除任务',
-      content: `确定删除「${tasks[idx].text}」吗？`,
-      success: (res) => {
-        if (res.confirm) {
-          tasks.splice(idx, 1);
-          this.saveTasks(tasks);
-        }
-      },
-    });
+    if (showConfirm) {
+      wx.showModal({
+        title: '删除任务',
+        content: `确定删除「${tasks[idx].text}」吗？`,
+        success: (res) => {
+          if (res.confirm) {
+            tasks.splice(idx, 1);
+            this.saveTasks(tasks);
+          }
+        },
+      });
+    } else {
+      tasks.splice(idx, 1);
+      this.saveTasks(tasks);
+    }
   },
 
   onFilterTap(e) {
