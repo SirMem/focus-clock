@@ -33,6 +33,24 @@ const SOUNDS = [
   { id: 'white', label: '❄️ 白噪音' },
 ];
 
+const TAB_LABELS = {
+  focus: '专注',
+  todo: '待办',
+  stats: '统计',
+  diary: '日记',
+  profile: '我的',
+  coach: '教练',
+};
+
+const TAB_ITEMS = [
+  { key: 'focus', label: '专注', icon: 'focus' },
+  { key: 'todo', label: '待办', icon: 'task' },
+  { key: 'stats', label: '统计', icon: 'chart-bar' },
+  { key: 'diary', label: '日记', icon: 'edit-1' },
+  { key: 'profile', label: '我的', icon: 'user-avatar' },
+  { key: 'coach', label: '教练', icon: 'user-avatar' },
+];
+
 Page({
   data: {
     // 计时器状态
@@ -56,30 +74,26 @@ Page({
       { label: '今日专注', value: '1h 15m', icon: '⏱️' },
       { label: '今日番茄', value: '2 个', icon: '🍅' },
     ],
-    tabItems: [
-      { key: 'focus', label: '专注', icon: 'timer' },
-      { key: 'todo', label: '待办', icon: 'unordered-list' },
-      { key: 'stats', label: '统计', icon: 'chart-bar' },
-      { key: 'diary', label: '日记', icon: 'edit-1' },
-      { key: 'coach', label: '教练', icon: 'user-avatar' },
-    ],
+    tabItems: TAB_ITEMS,
     activeTab: 'focus',
     modeColor: MODE_COLORS.focus,
     darkerColor: '#3A7BC8',
 
     // 导航栏
-    capsuleHeight: 0,
+    capsuleHeight: 44,
     statusBarHeight: 0,
   },
 
   onLoad() {
     // 获取胶囊位置适配自定义导航
-    const app = getApp();
     const sysInfo = wx.getSystemInfoSync();
     const menuInfo = wx.getMenuButtonBoundingClientRect();
+    const capsuleHeight = menuInfo.height + (menuInfo.top - sysInfo.statusBarHeight) * 2;
+
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight,
-      capsuleHeight: menuInfo.height + (menuInfo.top - sysInfo.statusBarHeight) * 2,
+      capsuleHeight,
+      statItems: this._buildStatItems(this.data.sessions),
     });
   },
 
@@ -91,13 +105,15 @@ Page({
       let t = this.data.timeLeft;
       if (t <= 1) {
         clearInterval(this.timer);
+        this.timer = null;
         const sessions = this.data.mode === 'focus' ? this.data.sessions + 1 : this.data.sessions;
         const tipIndex = (this.data.tipIndex + 1) % AI_TIPS.length;
         this.setData({
           timerState: 'idle',
-          timeLeft: DURATIONS[this.data.mode],
-          progress: 0,
+          timeLeft: 0,
+          progress: 1,
           sessions,
+          statItems: this._buildStatItems(sessions),
           currentTip: AI_TIPS[tipIndex],
           tipIndex,
         });
@@ -113,12 +129,18 @@ Page({
   },
 
   pause() {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
     this.setData({ timerState: 'paused' });
   },
 
   reset() {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
     this.setData({
       timerState: 'idle',
       timeLeft: DURATIONS[this.data.mode],
@@ -127,7 +149,10 @@ Page({
   },
 
   skip() {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
     const nextMode = this.data.mode === 'focus' ? 'shortBreak' : 'focus';
     const color = MODE_COLORS[nextMode];
     this.setData({
@@ -160,7 +185,10 @@ Page({
   onModeSwitch(e) {
     const m = e.currentTarget.dataset.mode;
     if (m === this.data.mode) return;
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
     const color = MODE_COLORS[m];
     this.setData({
       mode: m,
@@ -181,13 +209,24 @@ Page({
     wx.showToast({ title: '设置', icon: 'none' });
   },
 
+  onTabTap(e) {
+    const key = e.currentTarget.dataset.key;
+    this.setData({ activeTab: key });
+  },
+
   onTabChange(e) {
     const key = e.detail.value;
     this.setData({ activeTab: key });
-    wx.showToast({ title: '切换到 ' + key, icon: 'none' });
   },
 
   // ===== 工具函数 =====
+  _buildStatItems(sessions) {
+    return [
+      { label: '今日专注', value: '1h 15m', icon: '⏱️' },
+      { label: '今日番茄', value: `${sessions} 个`, icon: '🍅' },
+    ];
+  },
+
   _adjustColor(hex, amount) {
     const num = parseInt(hex.replace('#', ''), 16);
     const r = Math.min(255, Math.max(0, (num >> 16) + amount));
@@ -197,6 +236,9 @@ Page({
   },
 
   onUnload() {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   },
 });

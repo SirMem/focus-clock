@@ -1,126 +1,134 @@
-<!-- ===== 自定义导航栏 ===== -->
-<view class="nav-bar">
-  <view class="nav-left">
-    <view class="nav-placeholder"></view>
-  </view>
-  <view class="nav-title">专注时钟</view>
-  <view class="nav-right" bind:tap="onMenuTap">
-    <t-icon name="more" size="44rpx" color="#8A8A9A" />
-  </view>
-</view>
+<!-- ===== 页面容器（flex 撑满全屏，阻止滚动穿透） ===== -->
+<view class="page-wrapper">
 
-<scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-  
-  <!-- ===== 计时器区域 ===== -->
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left">
+        <view class="nav-placeholder"></view>
+      </view>
+      <view class="nav-title">专注时钟</view>
+      <view class="nav-right" bind:tap="onMenuTap">
+        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 计时器区域（固定在导航下方，不参与滚动） ===== -->
   <view class="timer-section">
-    <circular-timer 
+    <circular-timer
       progress="{{progress}}"
       mode="{{mode}}"
       timeLeft="{{timeLeft}}"
       state="{{timerState}}"
     />
-    
-    <!-- 当前任务 -->
     <view class="current-task" wx:if="{{currentTask}}">
       <text class="task-text">{{currentTask}}</text>
     </view>
   </view>
 
-  <!-- ===== 音效选择 ===== -->
-  <view class="sound-section">
-    <scroll-view class="sound-scroll" scroll-x enhanced show-scrollbar="{{false}}">
-      <view 
-        wx:for="{{sounds}}" 
-        wx:key="id" 
-        class="sound-item {{item.id === currentSound ? 'sound-active' : ''}}"
-        bind:tap="onSoundTap"
-        data-id="{{item.id}}"
+  <!-- ===== 可滚动内容区域（flex:1 占满剩余高度） ===== -->
+  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- 音效选择 -->
+    <view class="sound-section">
+      <scroll-view class="sound-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view
+          wx:for="{{sounds}}"
+          wx:key="id"
+          class="sound-item {{item.id === currentSound ? 'sound-active' : ''}}"
+          bind:tap="onSoundTap"
+          data-id="{{item.id}}"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 控制按钮（t-icon 替代 data:image/svg+xml） -->
+    <view class="controls-row">
+      <view class="ctrl-btn ctrl-btn-secondary" bind:tap="onReset">
+        <t-icon name="refresh" size="40rpx" color="#8A8A9A" />
+      </view>
+
+      <view class="ctrl-btn ctrl-btn-primary" style="background: linear-gradient(135deg, {{modeColor}}, {{darkerColor}}); box-shadow: 0 8rpx 32rpx {{modeColor}}50;" bind:tap="onPlayPause">
+        <t-icon wx:if="{{timerState === 'running'}}" name="pause-circle-stroke" size="48rpx" color="#fff" />
+        <t-icon wx:else name="play-circle-stroke" size="48rpx" color="#fff" />
+      </view>
+
+      <view class="ctrl-btn ctrl-btn-secondary" bind:tap="onSkip">
+        <t-icon name="next" size="40rpx" color="#8A8A9A" />
+      </view>
+    </view>
+
+    <!-- 番茄进度点 -->
+    <view class="progress-dots">
+      <view class="dots-row">
+        <view
+          wx:for="{{4}}"
+          wx:key="*this"
+          class="dot {{index < sessions % 4 ? 'dot-active' : ''}}"
+          style="background: {{index < sessions % 4 ? '#4A90D9' : '#D0D4DB'}}; transform: {{index < sessions % 4 ? 'scale(1.2)' : 'scale(1)'}}"
+        ></view>
+      </view>
+      <text class="dots-label">
+        今日已完成 <text style="color:#4A90D9;font-weight:600">{{sessions}}</text> 个番茄
+      </text>
+    </view>
+
+    <!-- 统计数据 -->
+    <view class="stats-row">
+      <view class="stat-card" wx:for="{{statItems}}" wx:key="label">
+        <text class="stat-icon">{{item.icon}}</text>
+        <view class="stat-info">
+          <text class="stat-label">{{item.label}}</text>
+          <text class="stat-value">{{item.value}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 模式切换 -->
+    <view class="mode-toggle">
+      <view
+        wx:for="{{modes}}"
+        wx:key="mode"
+        class="mode-btn {{item.mode === mode ? 'mode-btn-active' : ''}}"
+        style="background: {{item.mode === mode ? modeColor : 'transparent'}}; color: {{item.mode === mode ? '#fff' : '#8A8A9A'}}"
+        bind:tap="onModeSwitch"
+        data-mode="{{item.mode}}"
       >
         <text>{{item.label}}</text>
       </view>
-    </scroll-view>
-  </view>
+    </view>
 
-  <!-- ===== 模式切换 ===== -->
-  <view class="mode-toggle">
-    <view 
-      wx:for="{{modes}}" 
-      wx:key="mode" 
-      class="mode-btn {{item.mode === mode ? 'mode-btn-active' : ''}}"
-      style="background: {{item.mode === mode ? modeColor : 'transparent'}}; color: {{item.mode === mode ? '#fff' : '#8A8A9A'}}"
-      bind:tap="onModeSwitch"
-      data-mode="{{item.mode}}"
+    <!-- AI 教练卡片 -->
+    <view class="ai-card">
+      <view class="ai-header">
+        <view class="ai-avatar">AI</view>
+        <text class="ai-title">AI 教练</text>
+        <view class="ai-badge">智能建议</view>
+      </view>
+      <text class="ai-tip">{{currentTip}}</text>
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+  <!-- ===== 底部 Tab Bar（position:fixed 固定在底部） ===== -->
+  <!-- 使用 t-icon 替代 data:image/svg+xml -->
+  <view class="bottom-tab-bar">
+    <view
+      wx:for="{{tabItems}}"
+      wx:key="key"
+      class="tab-item {{item.key === activeTab ? 'tab-item-active' : ''}}"
+      bind:tap="onTabTap"
+      data-key="{{item.key}}"
     >
-      <text>{{item.label}}</text>
+      <t-icon name="{{item.icon}}" size="48rpx" color="{{item.key === activeTab ? '#4A90D9' : '#C0C4CC'}}" />
+      <text class="tab-label">{{item.label}}</text>
+      <view wx:if="{{item.key === activeTab}}" class="tab-dot"></view>
     </view>
   </view>
 
-  <!-- ===== 控制按钮 ===== -->
-  <view class="controls-row">
-    <!-- 重置按钮 -->
-    <view class="ctrl-btn ctrl-btn-secondary" bind:tap="onReset">
-      <view class="ctrl-icon">
-        <image src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M2 10C2 5.58 5.58 2 10 2C11.57 2 13.03 2.46 14.26 3.25L13 4.5' stroke='%238A8A9A' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M18 10C18 14.42 14.42 18 10 18C8.43 18 6.97 17.54 5.74 16.75L7 15.5' stroke='%238A8A9A' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M13 2V5H16' stroke='%238A8A9A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" mode="aspectFit" />
-      </view>
-    </view>
-
-    <!-- 播放/暂停按钮 -->
-    <view class="ctrl-btn ctrl-btn-primary" style="background: linear-gradient(135deg, {{modeColor}}, {{darkerColor}}); box-shadow: 0 8rpx 32rpx {{modeColor}}50;" bind:tap="onPlayPause">
-      <view class="ctrl-icon-primary">
-        <image wx:if="{{timerState === 'running'}}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='white'%3E%3Crect x='6' y='4' width='4' height='16' rx='1'/%3E%3Crect x='14' y='4' width='4' height='16' rx='1'/%3E%3C/svg%3E" mode="aspectFit" />
-        <image wx:else src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E" mode="aspectFit" />
-      </view>
-    </view>
-
-    <!-- 跳过按钮 -->
-    <view class="ctrl-btn ctrl-btn-secondary" bind:tap="onSkip">
-      <view class="ctrl-icon">
-        <image src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M4 4L13 10L4 16V4Z' fill='%238A8A9A'/%3E%3Cpath d='M13 4V16' stroke='%238A8A9A' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M16 4V16' stroke='%238A8A9A' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E" mode="aspectFit" />
-      </view>
-    </view>
-  </view>
-
-  <!-- ===== 番茄进度点 ===== -->
-  <view class="progress-dots">
-    <view class="dots-row">
-      <view 
-        wx:for="{{4}}" 
-        wx:key="*this" 
-        class="dot {{index < sessions % 4 ? 'dot-active' : ''}}"
-        style="background: {{index < sessions % 4 ? '#4A90D9' : '#D0D4DB'}}; transform: {{index < sessions % 4 ? 'scale(1.2)' : 'scale(1)'}}"
-      ></view>
-    </view>
-    <text class="dots-label">
-      今日已完成 <text style="color:#4A90D9;font-weight:600">{{sessions}}</text> 个番茄
-    </text>
-  </view>
-
-  <!-- ===== 统计数据 ===== -->
-  <view class="stats-row">
-    <view class="stat-card" wx:for="{{statItems}}" wx:key="label">
-      <text class="stat-icon">{{item.icon}}</text>
-      <view class="stat-info">
-        <text class="stat-label">{{item.label}}</text>
-        <text class="stat-value">{{item.value}}</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- ===== AI教练卡片 ===== -->
-  <view class="ai-card">
-    <view class="ai-header">
-      <view class="ai-avatar">AI</view>
-      <text class="ai-title">AI 教练</text>
-      <view class="ai-badge">智能建议</view>
-    </view>
-    <text class="ai-tip">{{currentTip}}</text>
-  </view>
-
-  <!-- 底部留白给 TabBar -->
-  <view style="height: 120rpx"></view>
-</scroll-view>
-
-<!-- ===== 底部 Tab Bar (TDesign) ===== -->
-<t-tab-bar value="{{activeTab}}" theme="white" shape="round" split="{{false}}" bind:change="onTabChange">
-  <t-tab-bar-item wx:for="{{tabItems}}" wx:key="key" value="{{item.key}}" icon="{{item.icon}}">{{item.label}}</t-tab-bar-item>
-</t-tab-bar>
+</view>

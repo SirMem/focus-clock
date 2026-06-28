@@ -3,16 +3,28 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 480rpx;
-  height: 480rpx;
+  width: 600rpx;
+  height: 600rpx;
 }
-.timer-canvas {
+
+.timer-glow {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 480rpx;
-  height: 480rpx;
+  top: 75rpx;
+  right: 75rpx;
+  bottom: 75rpx;
+  left: 75rpx;
+  border-radius: 50%;
+  opacity: 0.15;
+  filter: blur(48rpx);
 }
+
+.timer-canvas {
+  position: relative;
+  z-index: 1;
+  width: 600rpx;
+  height: 600rpx;
+}
+
 .time-display {
   position: absolute;
   top: 0;
@@ -24,18 +36,21 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
 }
+
 .time-text {
-  font-size: 88rpx;
+  font-size: 96rpx;
   font-weight: 700;
   color: #1A1A2E;
-  letter-spacing: 4rpx;
-  line-height: 1.2;
+  letter-spacing: -2rpx;
+  line-height: 1;
+  font-family: -apple-system, 'PingFang SC', sans-serif;
 }
+
 .state-label {
   font-size: 28rpx;
-  color: #8A8A9A;
-  margin-top: 8rpx;
+  line-height: 1.4;
+  margin-top: 16rpx;
   font-weight: 500;
 }

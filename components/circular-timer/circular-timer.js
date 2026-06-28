@@ -4,6 +4,12 @@ const MODE_COLORS = {
   longBreak: '#FF9500',
 };
 
+const MODE_LABELS = {
+  focus: '专注',
+  shortBreak: '短休息',
+  longBreak: '长休息',
+};
+
 Component({
   properties: {
     progress: {
@@ -32,19 +38,20 @@ Component({
     formattedTime: '25:00',
     stateLabel: '准备开始',
     ringColor: '#4A90D9',
-    canvasWidth: 360,
-    canvasHeight: 360,
+    canvasWidth: 300,
+    canvasHeight: 300,
     _canvasInitialized: false,
   },
 
   methods: {
     async initCanvas() {
       if (this.data._canvasInitialized) return;
-      
+
       try {
         const query = this.createSelectorQuery();
         const node = await new Promise((resolve) => {
-          query.select('#timerCanvas')
+          query
+            .select('#timerCanvas')
             .fields({ node: true, size: true })
             .exec((res) => {
               resolve(res[0]);
@@ -58,27 +65,28 @@ Component({
 
         const canvas = node.node;
         const ctx = canvas.getContext('2d');
-
-        // 适配像素密度
         const dpr = wx.getSystemInfoSync().pixelRatio;
-        canvas.width = this.data.canvasWidth * dpr;
-        canvas.height = this.data.canvasHeight * dpr;
+        const width = node.width || this.data.canvasWidth;
+        const height = node.height || this.data.canvasHeight;
+
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
         this._canvas = canvas;
         this._ctx = ctx;
+        this._canvasWidth = width;
+        this._canvasHeight = height;
         this.setData({ _canvasInitialized: true });
 
-        // 初始绘制
         this.drawRing(this.properties.progress);
       } catch (err) {
         console.error('Canvas init error:', err);
       }
     },
 
-    drawRing(progress) {
+    drawRing(progress = this.properties.progress) {
       if (!this._ctx || !this.data._canvasInitialized) {
-        // 延迟一次重试
         if (!this._retryTimer) {
           this._retryTimer = setTimeout(() => {
             this._retryTimer = null;
@@ -89,80 +97,42 @@ Component({
       }
 
       const ctx = this._ctx;
-      const w = this.data.canvasWidth;
-      const h = this.data.canvasHeight;
+      const w = this._canvasWidth || this.data.canvasWidth;
+      const h = this._canvasHeight || this.data.canvasHeight;
+      const size = Math.min(w, h);
       const cx = w / 2;
       const cy = h / 2;
-      const radius = 155; // 半径
-      const ringWidth = 14; // 圆环宽度
+      const radius = size * (110 / 300);
+      const ringWidth = size * (8 / 300);
       const color = this.data.ringColor;
+      const safeProgress = Math.max(0, Math.min(1, Number(progress) || 0));
 
-      // 清空画布
       ctx.clearRect(0, 0, w, h);
 
-      // 背景圆环
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = '#E8ECF0';
+      ctx.strokeStyle = '#E0E0E0';
       ctx.lineWidth = ringWidth;
-      ctx.lineCap = 'round';
+      ctx.lineCap = 'butt';
       ctx.stroke();
 
-      // 进度圆环（从顶部开始，顺时针）
-      if (progress > 0) {
-        const startAngle = -Math.PI / 2; // 从12点钟方向开始
-        const endAngle = startAngle + Math.PI * 2 * progress;
-        
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, startAngle, endAngle);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = ringWidth;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      }
-
-      // 起点小圆点装饰（只在进度>0且<1时显示）
-      if (progress > 0 && progress < 1) {
-        const dotAngle = -Math.PI / 2;
-        const dotX = cx + radius * Math.cos(dotAngle);
-        const dotY = cy + radius * Math.sin(dotAngle);
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-
-      // 结束小圆点装饰
-      if (progress > 0 && progress < 1) {
-        const endAngle = -Math.PI / 2 + Math.PI * 2 * progress;
-        const endX = cx + radius * Math.cos(endAngle);
-        const endY = cy + radius * Math.sin(endAngle);
-        ctx.beginPath();
-        ctx.arc(endX, endY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-
-      // 发光效果（运行中）
-      if (this.properties.state === 'running' && progress < 1) {
-        ctx.shadowColor = color + '40';
-        ctx.shadowBlur = 20;
-        // 重新绘制进度环带发光
+      if (safeProgress > 0) {
         const startAngle = -Math.PI / 2;
-        const endAngle = startAngle + Math.PI * 2 * progress;
+        const endAngle = startAngle + Math.PI * 2 * safeProgress;
+
         ctx.beginPath();
         ctx.arc(cx, cy, radius, startAngle, endAngle);
         ctx.strokeStyle = color;
         ctx.lineWidth = ringWidth;
         ctx.lineCap = 'round';
         ctx.stroke();
-        ctx.shadowBlur = 0;
       }
     },
 
     handleModeChange(mode) {
-      const color = MODE_COLORS[mode] || '#4A90D9';
+      const color = MODE_COLORS[mode] || MODE_COLORS.focus;
       this.setData({ ringColor: color }, () => {
+        this.updateState(this.properties.state);
         this.drawRing(this.properties.progress);
       });
     },
@@ -175,9 +145,10 @@ Component({
     },
 
     updateState(state) {
+      const modeLabel = MODE_LABELS[this.properties.mode] || MODE_LABELS.focus;
       const labels = {
-        idle: this.properties.mode === 'focus' ? '开始专注' : '休息一下',
-        running: '专注中',
+        idle: '准备开始',
+        running: `${modeLabel}中`,
         paused: '已暂停',
       };
       this.setData({ stateLabel: labels[state] || '' });
@@ -188,11 +159,10 @@ Component({
     attached() {
       this.updateTimeDisplay(this.properties.timeLeft);
       this.updateState(this.properties.state);
-      const color = MODE_COLORS[this.properties.mode] || '#4A90D9';
+      const color = MODE_COLORS[this.properties.mode] || MODE_COLORS.focus;
       this.setData({ ringColor: color });
     },
     ready() {
-      // 在组件渲染完成后初始化 Canvas
       this.initCanvas();
     },
     detached() {
