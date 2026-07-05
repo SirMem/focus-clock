@@ -23,8 +23,13 @@
       timeLeft="{{timeLeft}}"
       state="{{timerState}}"
     />
-    <view class="current-task" wx:if="{{currentTask}}">
+    <view class="current-task" bind:tap="onTaskPickerOpen" wx:if="{{selectedTaskId}}">
       <text class="task-text">{{currentTask}}</text>
+      <t-icon name="chevron-down" size="28rpx" color="#8A8A9A" />
+    </view>
+    <view class="current-task current-task-empty" bind:tap="onTaskPickerOpen" wx:else>
+      <text class="task-text-empty">选择待办任务</text>
+      <t-icon name="add" size="28rpx" color="#4A90D9" />
     </view>
   </view>
 
@@ -114,5 +119,50 @@
 
     <view class="bottom-scroll-space"></view>
   </scroll-view>
+
+  <!-- ===== 任务选择器弹层 ===== -->
+  <view class="picker-mask" wx:if="{{showTaskPicker}}" bind:tap="onTaskPickerClose"></view>
+  <view class="picker-panel {{showTaskPicker ? 'picker-show' : ''}}">
+    <view class="picker-header">
+      <text class="picker-title">选择待办任务</text>
+      <view bind:tap="onTaskPickerClose" class="picker-close">
+        <t-icon name="close" size="32rpx" color="#8A8A9A" />
+      </view>
+    </view>
+    <scroll-view class="picker-list" scroll-y enhanced show-scrollbar="{{false}}">
+      <view
+        wx:for="{{availableTasks}}"
+        wx:key="id"
+        class="picker-item {{item.id === selectedTaskId ? 'picker-item-active' : ''}}"
+        bind:tap="onTaskSelect"
+        data-id="{{item.id}}"
+      >
+        <view class="picker-item-info">
+          <text class="picker-item-text">{{item.text}}</text>
+          <text class="picker-item-meta">{{item.completed}}/{{item.pomodoros}} 🍅</text>
+        </view>
+        <t-icon wx:if="{{item.id === selectedTaskId}}" name="check" size="32rpx" color="#4A90D9" />
+      </view>
+    </scroll-view>
+    <view class="picker-empty" wx:if="{{availableTasks.length === 0}}">
+      <text class="picker-empty-text">暂无待办，请先去待办页添加任务</text>
+    </view>
+  </view>
+
+  <!-- ===== 底部 Tab Bar（position:fixed 固定在底部） ===== -->
+  <!-- 使用 t-icon 替代 data:image/svg+xml -->
+  <view class="bottom-tab-bar">
+    <view
+      wx:for="{{tabItems}}"
+      wx:key="key"
+      class="tab-item {{item.key === activeTab ? 'tab-item-active' : ''}}"
+      bind:tap="onTabTap"
+      data-key="{{item.key}}"
+    >
+      <t-icon name="{{item.icon}}" size="48rpx" color="{{item.key === activeTab ? '#4A90D9' : '#C0C4CC'}}" />
+      <text class="tab-label">{{item.label}}</text>
+      <view wx:if="{{item.key === activeTab}}" class="tab-dot"></view>
+    </view>
+  </view>
 
 </view>

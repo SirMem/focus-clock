@@ -1,10 +1,13 @@
+const sessionAPI = require('../../miniprogram/api/session.api');
+const taskAPI = require('../../miniprogram/api/task.api');
+const statsAPI = require('../../miniprogram/api/stats.api');
+const { mapTaskToView, formatDuration } = require('../../miniprogram/api/mappers');
+
 const DURATIONS = {
   focus: 25 * 60,
   shortBreak: 5 * 60,
   longBreak: 15 * 60,
 };
-
-const sessionAPI = require('../../miniprogram/api/session.api');
 
 const MODE_COLORS = {
   focus: '#4A90D9',
@@ -44,6 +47,15 @@ const TAB_LABELS = {
   coach: '教练',
 };
 
+const TAB_ITEMS = [
+  { key: 'focus', label: '专注', icon: 'focus' },
+  { key: 'todo', label: '待办', icon: 'task' },
+  { key: 'stats', label: '统计', icon: 'chart-bar' },
+  { key: 'diary', label: '日记', icon: 'edit-1' },
+  { key: 'profile', label: '我的', icon: 'user-avatar' },
+  { key: 'coach', label: '教练', icon: 'user-avatar' },
+];
+
 Page({
   data: {
     // 计时器状态
@@ -51,8 +63,11 @@ Page({
     timerState: 'idle', // idle | running | paused
     timeLeft: DURATIONS.focus,
     progress: 0,
-    sessions: 2,
-    currentTask: '📖 复习高数第三章',
+    sessions: 0,
+    currentTask: '',
+    selectedTaskId: '',
+    availableTasks: [],
+    showTaskPicker: false,
     currentSound: 'none',
     currentTip: AI_TIPS[0],
     tipIndex: 0,
@@ -64,9 +79,10 @@ Page({
       { mode: 'shortBreak', label: '休息 5分' },
     ],
     statItems: [
-      { label: '今日专注', value: '1h 15m', icon: '⏱️' },
-      { label: '今日番茄', value: '2 个', icon: '🍅' },
+      { label: '今日专注', value: '0m', icon: '⏱️' },
+      { label: '今日番茄', value: '0 个', icon: '🍅' },
     ],
+    tabItems: TAB_ITEMS,
     activeTab: 'focus',
     modeColor: MODE_COLORS.focus,
     darkerColor: '#3A7BC8',
@@ -78,35 +94,92 @@ Page({
 
   async onLoad() {
     // 获取胶囊位置适配自定义导航
-    const sysInfo = wx.getWindowInfo();
+    const sysInfo = wx.getSystemInfoSync();
     const menuInfo = wx.getMenuButtonBoundingClientRect();
     const capsuleHeight = menuInfo.height + (menuInfo.top - sysInfo.statusBarHeight) * 2;
 
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight,
       capsuleHeight,
-      statItems: this._buildStatItems(this.data.sessions),
     });
 
-    // 加载今日统计
-    await this._loadTodayStats();
+    // 加载今日统计和可选任务
+    await Promise.all([
+      this._loadTodayStats(),
+      this._loadAvailableTasks(),
+    ]);
   },
 
-  async _loadTodayStats() {
+  // ===== 任务选择 =====
+  async _loadAvailableTasks() {
     try {
-      const res = await sessionAPI.list({ page: 1, pageSize: 1 });
+      const res = await taskAPI.list({ isDone: false }, 1, 100);
       if (res.code === 0) {
-        // 这里简化处理，统计页有完整数据
-        // 专注页只显示今日专注时长和番茄数
+        const tasks = (res.data.tasks || []).map(mapTaskToView);
+        this.setData({ availableTasks: tasks });
+        // 如果当前 selectedTaskId 不存在且列表非空，默认选第一个
+        const hasSelection = tasks.some(t => t.id === this.data.selectedTaskId);
+        if (!hasSelection && tasks.length > 0) {
+          this.setData({
+            selectedTaskId: tasks[0].id,
+            currentTask: tasks[0].text,
+          });
+        }
       }
     } catch (err) {
-      // 静默失败，不影响计时器使用
+      console.error('加载可用任务失败', err);
+    }
+  },
+
+  // ===== 今日统计 =====
+  async _loadTodayStats() {
+    try {
+      const res = await statsAPI.today();
+      if (res.code === 0) {
+        const data = res.data || {};
+        const pomodoroCount = data.pomodoroCount || 0;
+        this.setData({
+          sessions: pomodoroCount,
+          statItems: [
+            { label: '今日专注', value: formatDuration(data.focusMinutes || 0), icon: '⏱️' },
+            { label: '今日番茄', value: `${pomodoroCount} 个`, icon: '🍅' },
+          ],
+        });
+      }
+    } catch (err) {
+      console.error('加载今日统计失败', err);
+    }
+  },
+
+  // ===== 任务选择器 =====
+  async onTaskPickerOpen() {
+    await this._loadAvailableTasks();
+    this.setData({ showTaskPicker: true });
+  },
+
+  onTaskSelect(e) {
+    const id = e.currentTarget.dataset.id;
+    const task = this.data.availableTasks.find(t => t.id === id);
+    if (task) {
+      this.setData({
+        selectedTaskId: task.id,
+        currentTask: task.text,
+        showTaskPicker: false,
+      });
     }
   },
 
   // ===== 计时器逻辑 =====
   start() {
     if (this.data.timerState === 'running') return;
+
+    // focus 模式必须选择任务才能开始
+    if (this.data.mode === 'focus' && !this.data.selectedTaskId) {
+      this.onTaskPickerOpen();
+      wx.showToast({ title: '请先选择一个待办任务', icon: 'none' });
+      return;
+    }
+
     this.setData({ timerState: 'running' });
     this.timer = setInterval(() => {
       let t = this.data.timeLeft;
@@ -127,13 +200,8 @@ Page({
         // 计时结束震动反馈
         wx.vibrateShort({ type: 'medium' });
 
-        // 记录完成会话
-        if (this.data.mode === 'focus') {
-          sessionAPI.complete('focus', DURATIONS.focus, {
-            taskId: null,
-            completedPomodoro: true,
-          }).catch(err => console.error('Failed to record session', err));
-        }
+        // 记录完成会话并刷新数据
+        this._onTimerComplete();
         return;
       }
       t -= 1;
@@ -141,6 +209,24 @@ Page({
       const progress = 1 - t / total;
       this.setData({ timeLeft: t, progress });
     }, 1000);
+  },
+
+  async _onTimerComplete() {
+    try {
+      const mode = this.data.mode;
+      const isFocus = mode === 'focus';
+      await sessionAPI.complete(mode, DURATIONS[mode], {
+        taskId: this.data.selectedTaskId || null,
+        completedPomodoro: isFocus,
+      });
+      // 刷新统计和任务列表
+      await Promise.all([
+        this._loadTodayStats(),
+        this._loadAvailableTasks(),
+      ]);
+    } catch (err) {
+      console.error('Failed to record session', err);
+    }
   },
 
   pause() {
@@ -224,6 +310,29 @@ Page({
     wx.showToast({ title: '设置', icon: 'none' });
   },
 
+  onTabTap(e) {
+    const key = e.currentTarget.dataset.key;
+    // 当前就在 focus 页，不做操作
+    if (key === 'focus') {
+      this.setData({ activeTab: key });
+      return;
+    }
+    // 其他 tab → 跳转对应页面
+    const pageMap = {
+      todo: '/pages/todo/todo',
+    };
+    const url = pageMap[key];
+    if (url) {
+      wx.redirectTo({ url });
+    } else {
+      wx.showToast({ title: '开发中...', icon: 'none' });
+    }
+  },
+
+  onTaskPickerClose() {
+    this.setData({ showTaskPicker: false });
+  },
+
   onTabChange(e) {
     const key = e.detail.value;
     this.setData({ activeTab: key });
@@ -232,10 +341,8 @@ Page({
   // ===== 工具函数 =====
   _buildStatItems(sessions) {
     const focusMinutes = sessions * 25;
-    const hours = Math.floor(focusMinutes / 60);
-    const mins = focusMinutes % 60;
     return [
-      { label: '今日专注', value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`, icon: '⏱️' },
+      { label: '今日专注', value: formatDuration(focusMinutes), icon: '⏱️' },
       { label: '今日番茄', value: `${sessions} 个`, icon: '🍅' },
     ];
   },
