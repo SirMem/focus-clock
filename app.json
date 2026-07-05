@@ -1,7 +1,12 @@
 {
   "pages": [
+    "pages/login/login",
     "pages/focus/focus",
-    "pages/todo/todo"
+    "pages/todo/todo",
+    "pages/stats/stats",
+    "pages/diary/diary",
+    "pages/profile/profile",
+    "pages/coach/coach"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -9,15 +14,52 @@
     "backgroundColorTop": "#F5F7FA",
     "backgroundColorBottom": "#F5F7FA"
   },
+  "tabBar": {
+    "custom": false,
+    "color": "#999999",
+    "selectedColor": "#409EFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/focus/focus",
+        "text": "专注",
+        "iconPath": "images/tab/focus.png",
+        "selectedIconPath": "images/tab/focus_active.png"
+      },
+      {
+        "pagePath": "pages/todo/todo",
+        "text": "待办",
+        "iconPath": "images/tab/todo.png",
+        "selectedIconPath": "images/tab/todo_active.png"
+      },
+      {
+        "pagePath": "pages/stats/stats",
+        "text": "统计",
+        "iconPath": "images/tab/stats.png",
+        "selectedIconPath": "images/tab/stats_active.png"
+      },
+      {
+        "pagePath": "pages/diary/diary",
+        "text": "日记",
+        "iconPath": "images/tab/diary.png",
+        "selectedIconPath": "images/tab/diary_active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tab/profile.png",
+        "selectedIconPath": "images/tab/profile_active.png"
+      }
+    ]
+  },
   "usingComponents": {
     "t-button": "tdesign-miniprogram/button/button",
     "t-icon": "tdesign-miniprogram/icon/icon",
     "t-tag": "tdesign-miniprogram/tag/tag",
     "t-cell": "tdesign-miniprogram/cell/cell",
     "t-navbar": "tdesign-miniprogram/navbar/navbar",
-    "t-progress": "tdesign-miniprogram/progress/progress",
-    "t-tab-bar": "tdesign-miniprogram/tab-bar/tab-bar",
-    "t-tab-bar-item": "tdesign-miniprogram/tab-bar-item/tab-bar-item"
+    "t-progress": "tdesign-miniprogram/progress/progress"
   },
   "sitemapLocation": "sitemap.json"
 }

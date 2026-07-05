@@ -4,6 +4,8 @@ const DURATIONS = {
   longBreak: 15 * 60,
 };
 
+const sessionAPI = require('../../miniprogram/api/session.api');
+
 const MODE_COLORS = {
   focus: '#4A90D9',
   shortBreak: '#34C759',
@@ -42,15 +44,6 @@ const TAB_LABELS = {
   coach: '教练',
 };
 
-const TAB_ITEMS = [
-  { key: 'focus', label: '专注', icon: 'focus' },
-  { key: 'todo', label: '待办', icon: 'task' },
-  { key: 'stats', label: '统计', icon: 'chart-bar' },
-  { key: 'diary', label: '日记', icon: 'edit-1' },
-  { key: 'profile', label: '我的', icon: 'user-avatar' },
-  { key: 'coach', label: '教练', icon: 'user-avatar' },
-];
-
 Page({
   data: {
     // 计时器状态
@@ -74,7 +67,6 @@ Page({
       { label: '今日专注', value: '1h 15m', icon: '⏱️' },
       { label: '今日番茄', value: '2 个', icon: '🍅' },
     ],
-    tabItems: TAB_ITEMS,
     activeTab: 'focus',
     modeColor: MODE_COLORS.focus,
     darkerColor: '#3A7BC8',
@@ -84,9 +76,9 @@ Page({
     statusBarHeight: 0,
   },
 
-  onLoad() {
+  async onLoad() {
     // 获取胶囊位置适配自定义导航
-    const sysInfo = wx.getSystemInfoSync();
+    const sysInfo = wx.getWindowInfo();
     const menuInfo = wx.getMenuButtonBoundingClientRect();
     const capsuleHeight = menuInfo.height + (menuInfo.top - sysInfo.statusBarHeight) * 2;
 
@@ -95,6 +87,21 @@ Page({
       capsuleHeight,
       statItems: this._buildStatItems(this.data.sessions),
     });
+
+    // 加载今日统计
+    await this._loadTodayStats();
+  },
+
+  async _loadTodayStats() {
+    try {
+      const res = await sessionAPI.list({ page: 1, pageSize: 1 });
+      if (res.code === 0) {
+        // 这里简化处理，统计页有完整数据
+        // 专注页只显示今日专注时长和番茄数
+      }
+    } catch (err) {
+      // 静默失败，不影响计时器使用
+    }
   },
 
   // ===== 计时器逻辑 =====
@@ -119,6 +126,14 @@ Page({
         });
         // 计时结束震动反馈
         wx.vibrateShort({ type: 'medium' });
+
+        // 记录完成会话
+        if (this.data.mode === 'focus') {
+          sessionAPI.complete('focus', DURATIONS.focus, {
+            taskId: null,
+            completedPomodoro: true,
+          }).catch(err => console.error('Failed to record session', err));
+        }
         return;
       }
       t -= 1;
@@ -209,25 +224,6 @@ Page({
     wx.showToast({ title: '设置', icon: 'none' });
   },
 
-  onTabTap(e) {
-    const key = e.currentTarget.dataset.key;
-    // 当前就在 focus 页，不做操作
-    if (key === 'focus') {
-      this.setData({ activeTab: key });
-      return;
-    }
-    // 其他 tab → 跳转对应页面
-    const pageMap = {
-      todo: '/pages/todo/todo',
-    };
-    const url = pageMap[key];
-    if (url) {
-      wx.redirectTo({ url });
-    } else {
-      wx.showToast({ title: '开发中...', icon: 'none' });
-    }
-  },
-
   onTabChange(e) {
     const key = e.detail.value;
     this.setData({ activeTab: key });
@@ -235,8 +231,11 @@ Page({
 
   // ===== 工具函数 =====
   _buildStatItems(sessions) {
+    const focusMinutes = sessions * 25;
+    const hours = Math.floor(focusMinutes / 60);
+    const mins = focusMinutes % 60;
     return [
-      { label: '今日专注', value: '1h 15m', icon: '⏱️' },
+      { label: '今日专注', value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`, icon: '⏱️' },
       { label: '今日番茄', value: `${sessions} 个`, icon: '🍅' },
     ];
   },

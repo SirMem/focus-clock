@@ -1,0 +1,151 @@
+<view class="page-wrapper">
+
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left">
+        <view class="nav-placeholder"></view>
+      </view>
+      <view class="nav-title">专注日记</view>
+      <view class="nav-right" bind:tap="onMenuTap">
+        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- ===== 日期标题 ===== -->
+    <view class="diary-date-header">
+      <view class="date-icon-wrap">
+        <t-icon name="time" size="36rpx" color="#4A90D9" />
+      </view>
+      <text class="diary-date-text">{{todayDate}}</text>
+    </view>
+
+    <!-- ===== 心情选择器 ===== -->
+    <view class="emotion-section">
+      <text class="section-label">今天的心情</text>
+      <view class="emotion-row">
+        <view
+          wx:for="{{emotions}}"
+          wx:key="id"
+          class="emotion-item {{item.id === selectedEmotion ? 'emotion-active' : ''}}"
+          bind:tap="onEmotionSelect"
+          data-id="{{item.id}}"
+        >
+          <text class="emotion-emoji">{{item.emoji}}</text>
+          <text class="emotion-label">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== AI 引导提示 ===== -->
+    <view class="ai-prompt-card">
+      <view class="ai-prompt-icon">💡</view>
+      <view class="ai-prompt-content">
+        <text class="ai-prompt-title">AI 引导思考</text>
+        <text class="ai-prompt-text">{{currentPrompt}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 文本输入区 ===== -->
+    <view class="input-section">
+      <view class="input-card">
+        <textarea
+          class="diary-textarea"
+          placeholder="记录今天的感受、收获和反思..."
+          placeholder-style="color:#C0C4CC;font-size:28rpx"
+          value="{{content}}"
+          bindinput="onContentInput"
+          maxlength="{{maxChars}}"
+          auto-height
+        />
+        <view class="input-footer">
+          <view class="input-actions">
+            <text class="input-action-btn" bind:tap="onPhotoTap">📷</text>
+            <text class="input-action-btn" bind:tap="onVoiceTap">🎤</text>
+          </view>
+          <text class="char-count" style="color: {{charCount > maxChars * 0.9 ? '#FF9500' : '#C0C4CC'}}">
+            {{charCount}}/{{maxChars}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 今日完成的任务 ===== -->
+    <view class="today-tasks-section">
+      <view class="today-tasks-card">
+        <view class="today-tasks-header">
+          <text class="today-tasks-icon">📋</text>
+          <text class="today-tasks-title">今日完成</text>
+          <view class="today-tasks-badge">
+            <text>{{todayTasks.length}} 个任务</text>
+          </view>
+        </view>
+        <view class="today-tasks-list">
+          <view
+            wx:for="{{todayTasks}}"
+            wx:key="id"
+            class="today-task-item"
+          >
+            <text class="today-task-text">{{item.text}}</text>
+            <text class="today-task-duration">{{item.duration}}min</text>
+            <text class="today-task-check">✓</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 保存按钮 ===== -->
+    <view class="save-section">
+      <view
+        class="save-btn {{content.trim() ? 'save-btn-active' : ''}}"
+        bind:tap="onSave"
+      >
+        <text>保存今日记录</text>
+      </view>
+    </view>
+
+    <!-- ===== 历史记录 ===== -->
+    <view class="history-section">
+      <view class="history-header">
+        <text class="history-title">历史记录</text>
+        <view class="history-view-all" bind:tap="onViewAll">
+          <text>查看全部</text>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view wx:if="{{historyEntries.length === 0}}" class="history-empty">
+        <view class="history-empty-icon-wrap">
+          <text class="history-empty-icon">📔</text>
+        </view>
+        <text class="history-empty-title">还没有记录</text>
+        <text class="history-empty-desc">开始写下今天的感受吧</text>
+      </view>
+
+      <!-- 历史列表 -->
+      <view wx:else class="history-list">
+        <view
+          wx:for="{{historyEntries}}"
+          wx:key="id"
+          class="history-item"
+          bind:tap="onHistoryTap"
+          data-id="{{item.id}}"
+        >
+          <text class="history-item-emoji">{{item.emotion}}</text>
+          <view class="history-item-content">
+            <text class="history-item-date">{{item.date}}</text>
+            <text class="history-item-preview">{{item.preview}}</text>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+</view>

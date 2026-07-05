@@ -138,19 +138,4 @@
 
   </view>
 
-  <!-- ===== 底部 Tab Bar ===== -->
-  <view class="bottom-tab-bar">
-    <view
-      wx:for="{{tabItems}}"
-      wx:key="key"
-      class="tab-item {{item.key === 'todo' ? 'tab-item-active' : ''}}"
-      bind:tap="onTabTap"
-      data-key="{{item.key}}"
-    >
-      <t-icon name="{{item.icon}}" size="48rpx" color="{{item.key === 'todo' ? '#4A90D9' : '#C0C4CC'}}" />
-      <text class="tab-label">{{item.label}}</text>
-      <view wx:if="{{item.key === 'todo'}}" class="tab-dot"></view>
-    </view>
-  </view>
-
 </view>

@@ -1,0 +1,132 @@
+<view class="page-wrapper">
+
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left">
+        <view class="nav-placeholder"></view>
+      </view>
+      <view class="nav-title">专注统计</view>
+      <view class="nav-right" bind:tap="onMenuTap">
+        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- ===== 周期选择器 ===== -->
+    <view class="period-selector">
+      <view
+        wx:for="{{periods}}"
+        wx:key="key"
+        class="period-btn {{item.key === period ? 'period-active' : ''}}"
+        bind:tap="onPeriodChange"
+        data-key="{{item.key}}"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 摘要卡片行 ===== -->
+    <view class="summary-row">
+      <view
+        wx:for="{{summaryCards}}"
+        wx:key="label"
+        class="summary-card"
+      >
+        <text class="summary-icon">{{item.icon}}</text>
+        <text class="summary-value">{{item.value}}</text>
+        <text class="summary-label">{{item.label}}</text>
+        <view class="summary-trend">
+          <text class="trend-arrow {{item.isUp ? 'arrow-up' : 'arrow-down'}}">{{item.isUp ? '▲' : '▼'}}</text>
+          <text class="trend-text" style="color: {{item.isUp ? '#34C759' : '#FF3B30'}}">{{item.trend}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 专注趋势面积图 (ECharts) ===== -->
+    <view class="trend-card">
+      <text class="trend-title">{{trendTitle}}</text>
+      <ec-canvas id="trendChart" canvas-id="trendChart" ec="{{ trendChart }}" class="trend-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
+    </view>
+
+    <!-- ===== 专注日历 (ECharts Heatmap) ===== -->
+    <view class="heatmap-card">
+      <view class="heatmap-header">
+        <text class="heatmap-title">专注日历</text>
+        <view class="heatmap-legend">
+          <text class="legend-label">少</text>
+          <view wx:for="{{heatmapLevels}}" wx:key="index" class="legend-cell" style="background: {{item}}"></view>
+          <text class="legend-label">多</text>
+        </view>
+      </view>
+      <ec-canvas id="heatmapChart" canvas-id="heatmapChart" ec="{{ heatmapChart }}" class="heatmap-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
+    </view>
+
+    <!-- ===== 环形图行 (ECharts Ring) ===== -->
+    <view class="rings-row">
+      <!-- 专注 vs 休息 (双环) -->
+      <view class="ring-card">
+        <text class="ring-card-title">专注 vs 休息</text>
+        <view class="ring-chart-wrap">
+          <ec-canvas id="focusRestChart" canvas-id="focusRestChart" ec="{{ focusRestChart }}" class="ring-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
+        </view>
+        <view class="ring-legend">
+          <view class="legend-item">
+            <view class="legend-dot" style="background: #4A90D9;"></view>
+            <text class="legend-text">{{focusPercent}}%</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-dot" style="background: #FF9500;"></view>
+            <text class="legend-text">{{restPercent}}%</text>
+          </view>
+        </view>
+      </view>
+      <!-- 任务完成率 (单环) -->
+      <view class="ring-card">
+        <text class="ring-card-title">任务完成率</text>
+        <view class="ring-chart-wrap">
+          <ec-canvas id="taskRingChart" canvas-id="taskRingChart" ec="{{ taskRingChart }}" class="ring-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
+          <view class="ring-center-text">
+            <text class="ring-value">{{taskPercent}}%</text>
+          </view>
+        </view>
+        <text class="ring-sub-label">已完成 {{doneTasks}}/{{totalTasks}} 任务</text>
+      </view>
+    </view>
+
+    <!-- ===== 今日评分卡片 ===== -->
+    <view class="score-card">
+      <view class="score-left">
+        <text class="score-label">今日评分</text>
+        <view class="score-value-wrap">
+          <text class="score-value">{{score}}</text>
+          <text class="score-unit">分</text>
+        </view>
+      </view>
+      <view class="score-emoji">{{scoreEmoji}}</view>
+      <view class="score-footer">
+        <text class="score-ai-text">{{scoreInsight}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 专注日记入口 ===== -->
+    <view class="journal-entry" bind:tap="onJournalTap">
+      <view class="journal-left">
+        <view class="journal-icon-wrap">
+          <text class="journal-icon">📔</text>
+        </view>
+        <view class="journal-info">
+          <text class="journal-title">专注日记</text>
+          <text class="journal-desc">记录今天的收获与感悟</text>
+        </view>
+      </view>
+      <t-icon name="chevron-right" size="32rpx" color="#C0C4CC" />
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+</view>

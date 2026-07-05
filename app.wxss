@@ -46,3 +46,111 @@ page {
 .h-full { height: 100%; }
 .text-center { text-align: center; }
 .whitespace-nowrap { white-space: nowrap; }
+
+/* ===== 自定义导航栏（全局共享） ===== */
+.nav-shell {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1rpx solid #F0F2F5;
+}
+
+.status-spacer {
+  width: 100%;
+  background: #fff;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  background: #fff;
+}
+
+.nav-left,
+.nav-right {
+  width: 88rpx;
+  display: flex;
+  align-items: center;
+}
+
+.nav-right {
+  justify-content: flex-end;
+}
+
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+/* ===== 页面容器 ===== */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #F5F7FA;
+}
+
+/* ===== 页面滚动容器 ===== */
+.page-scroll {
+  flex: 1;
+  height: 0;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  background: #F5F7FA;
+}
+
+.bottom-scroll-space {
+  height: 48rpx;
+}
+
+/* ===== 底部 Tab Bar ===== */
+.bottom-tab-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 12rpx 0 24rpx;
+  background: #fff;
+  border-top: 1rpx solid #F0F2F5;
+  position: relative;
+  z-index: 50;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  position: relative;
+  padding: 4rpx 24rpx;
+  transition: transform 0.2s ease;
+}
+
+.tab-item:active {
+  transform: scale(0.95);
+}
+
+.tab-label {
+  font-size: 20rpx;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #C0C4CC;
+}
+
+.tab-item-active .tab-label {
+  color: #4A90D9;
+}
+
+.tab-dot {
+  position: absolute;
+  top: 88rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #4A90D9;
+}

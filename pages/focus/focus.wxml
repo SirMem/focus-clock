@@ -115,20 +115,4 @@
     <view class="bottom-scroll-space"></view>
   </scroll-view>
 
-  <!-- ===== 底部 Tab Bar（position:fixed 固定在底部） ===== -->
-  <!-- 使用 t-icon 替代 data:image/svg+xml -->
-  <view class="bottom-tab-bar">
-    <view
-      wx:for="{{tabItems}}"
-      wx:key="key"
-      class="tab-item {{item.key === activeTab ? 'tab-item-active' : ''}}"
-      bind:tap="onTabTap"
-      data-key="{{item.key}}"
-    >
-      <t-icon name="{{item.icon}}" size="48rpx" color="{{item.key === activeTab ? '#4A90D9' : '#C0C4CC'}}" />
-      <text class="tab-label">{{item.label}}</text>
-      <view wx:if="{{item.key === activeTab}}" class="tab-dot"></view>
-    </view>
-  </view>
-
 </view>

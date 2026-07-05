@@ -1,0 +1,50 @@
+<view class="page-login">
+  <!-- 状态栏占位 -->
+  <view style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 品牌区域 -->
+  <view class="brand-area">
+    <!-- 装饰圆环 + Logo -->
+    <view class="rings-wrapper">
+      <view class="ring ring-1"></view>
+      <view class="ring ring-2"></view>
+      <view class="ring ring-3"></view>
+      <view class="logo-wrapper">
+        <image class="tomato-logo" src="{{tomatoLogoSrc}}" mode="aspectFit" />
+      </view>
+    </view>
+
+    <text class="app-name">专注时钟</text>
+    <text class="slogan">每一次专注，都在塑造更好的自己</text>
+  </view>
+
+  <!-- 底部 CTA 区域 -->
+  <view class="cta-area">
+    <!-- 分隔线 -->
+    <view class="divider">
+      <view class="divider-line"></view>
+      <text class="divider-text">快速开始</text>
+      <view class="divider-line"></view>
+    </view>
+
+    <!-- 微信一键登录按钮 -->
+    <button
+      class="login-btn {{btnClass}}"
+      disabled="{{btnDisabled}}"
+      bindtap="handleLogin"
+      hover-class="btn-hover"
+    >
+      <image wx:if="{{btnState === 'loading'}}" class="spinner-icon" src="{{spinnerSrc}}" mode="aspectFit" />
+      <image wx:else class="wechat-icon" src="{{wechatLogoSrc}}" mode="aspectFit" />
+      <text>{{btnText}}</text>
+    </button>
+
+    <!-- 隐私提示 -->
+    <view class="privacy-note">
+      <text>登录即代表你同意</text>
+      <text class="link">用户协议</text>
+      <text>和</text>
+      <text class="link">隐私政策</text>
+    </view>
+  </view>
+</view>

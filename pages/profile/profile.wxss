@@ -1,0 +1,307 @@
+/* ===== 个人信息卡片 ===== */
+.profile-card {
+  margin: 32rpx 32rpx 0;
+  padding: 40rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, #4A90D9 0%, #667EEA 100%);
+  box-shadow: 0 16rpx 48rpx rgba(74, 144, 217, 0.25);
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.avatar-wrap {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.avatar-wrap:active {
+  transform: scale(0.95);
+}
+
+.avatar-content {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-guest {
+  background: rgba(255,255,255,0.2);
+}
+
+.avatar-emoji {
+  font-size: 56rpx;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8rpx;
+}
+
+.user-desc {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.8);
+}
+
+.settings-btn {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.settings-btn:active {
+  transform: scale(0.9);
+}
+
+/* ===== 统计摘要 ===== */
+.stats-summary {
+  display: flex;
+  gap: 16rpx;
+  margin: 32rpx 32rpx 0;
+}
+
+.summary-item {
+  flex: 1;
+  padding: 24rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.summary-icon {
+  font-size: 40rpx;
+}
+
+.summary-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #4A90D9;
+}
+
+.summary-label {
+  font-size: 22rpx;
+  color: #8A8A9A;
+}
+
+/* ===== 目标卡片 ===== */
+.goal-card {
+  margin: 24rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.goal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.goal-icon {
+  font-size: 36rpx;
+}
+
+.goal-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.goal-pct {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A90D9;
+}
+
+.goal-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: #8A8A9A;
+  margin-bottom: 16rpx;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 16rpx;
+  border-radius: 999rpx;
+  background: #E0E4EA;
+  overflow: hidden;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #4A90D9, #667EEA);
+  transition: width 0.5s;
+}
+
+.goal-remain {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-top: 16rpx;
+}
+
+/* ===== 菜单区域 ===== */
+.menu-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.menu-section-title {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #8A8A9A;
+  padding: 0 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.menu-card {
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 0 32rpx;
+  height: 112rpx;
+  transition: all 0.2s;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.menu-item:first-child {
+  border-top: none;
+}
+
+.menu-item:active {
+  background: #F8F9FA;
+}
+
+.menu-item-icon {
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.menu-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-item-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+}
+
+.menu-item-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-top: 4rpx;
+}
+
+.menu-item-badge {
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+/* ===== 开关 ===== */
+.menu-switch {
+  width: 88rpx;
+  height: 48rpx;
+  border-radius: 999rpx;
+  background: #E0E4EA;
+  padding: 4rpx;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.switch-on {
+  background: #34C759;
+}
+
+.switch-knob {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.15);
+  transition: all 0.2s;
+}
+
+.switch-on .switch-knob {
+  transform: translateX(40rpx);
+}
+
+/* ===== 退出登录 ===== */
+.logout-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 24rpx 0;
+  border-radius: 32rpx;
+  background: #fff;
+  color: #FF3B30;
+  font-size: 26rpx;
+  font-weight: 500;
+  text-align: center;
+  border: 3rpx solid #FFE5E5;
+  transition: all 0.2s;
+}
+
+.logout-btn:active {
+  transform: scale(0.98);
+}
+
+.version-text {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: #C0C4CC;
+  margin-top: 48rpx;
+}

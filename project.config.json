@@ -1,5 +1,7 @@
 {
   "miniprogramRoot": ".",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "setting": {
     "packNpmManually": true,
     "packNpmRelationList": [

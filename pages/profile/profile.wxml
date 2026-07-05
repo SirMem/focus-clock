@@ -1,0 +1,150 @@
+<view class="page-wrapper">
+
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left">
+        <view class="nav-placeholder"></view>
+      </view>
+      <view class="nav-title">我的</view>
+      <view class="nav-right" bind:tap="onMenuTap">
+        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- ===== 个人信息卡片 ===== -->
+    <view class="profile-card">
+      <view class="profile-info">
+        <view class="avatar-wrap" bind:tap="onAvatarTap">
+          <view wx:if="{{isLoggedIn}}" class="avatar-content">
+            <text class="avatar-emoji">🧑‍💻</text>
+          </view>
+          <view wx:else class="avatar-content avatar-guest">
+            <t-icon name="user-avatar" size="48rpx" color="#fff" />
+          </view>
+        </view>
+        <view class="user-info">
+          <text wx:if="{{isLoggedIn}}" class="user-name">李明远</text>
+          <text wx:if="{{isLoggedIn}}" class="user-desc">专注达人 · 连续打卡 15 天</text>
+          <block wx:else>
+            <text class="user-name">点击登录</text>
+            <text class="user-desc">登录后查看完整数据</text>
+          </block>
+        </view>
+        <view class="settings-btn" bind:tap="onSettingsTap">
+          <t-icon name="settings" size="36rpx" color="rgba(255,255,255,0.8)" />
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 统计摘要行 ===== -->
+    <view class="stats-summary">
+      <view class="summary-item" wx:for="{{summaryStats}}" wx:key="label">
+        <text class="summary-icon">{{item.icon}}</text>
+        <text class="summary-value">{{item.value}}</text>
+        <text class="summary-label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- ===== 本月目标 ===== -->
+    <view class="goal-card">
+      <view class="goal-header">
+        <view class="goal-title-wrap">
+          <text class="goal-icon">🎯</text>
+          <text class="goal-title">本月目标</text>
+        </view>
+        <text class="goal-pct">{{monthlyGoalProgress}}%</text>
+      </view>
+      <text class="goal-subtitle">专注 {{monthlyGoalCurrent}}h / {{monthlyGoalTarget}}h</text>
+      <view class="goal-progress-bar">
+        <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%;"></view>
+      </view>
+      <text class="goal-remain">还需 {{goalRemain}}h 达成目标</text>
+    </view>
+
+    <!-- ===== 功能菜单 ===== -->
+    <view class="menu-section">
+      <text class="menu-section-title">功能</text>
+      <view class="menu-card">
+        <view
+          wx:for="{{featureMenu}}"
+          wx:key="label"
+          class="menu-item"
+          bind:tap="onMenuItemTap"
+          data-key="{{item.key}}"
+        >
+          <text class="menu-item-icon">{{item.icon}}</text>
+          <view class="menu-item-content">
+            <text class="menu-item-label">{{item.label}}</text>
+            <text class="menu-item-desc">{{item.desc}}</text>
+          </view>
+          <view wx:if="{{item.badge}}" class="menu-item-badge" style="background: {{item.badgeColor || '#34C759'}}; color: #fff;">
+            <text>{{item.badge}}</text>
+          </view>
+          <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 设置菜单 ===== -->
+    <view class="menu-section">
+      <text class="menu-section-title">设置</text>
+      <view class="menu-card">
+        <view
+          wx:for="{{settingMenu}}"
+          wx:key="label"
+          class="menu-item"
+          bind:tap="onMenuItemTap"
+          data-key="{{item.key}}"
+        >
+          <text class="menu-item-icon">{{item.icon}}</text>
+          <view class="menu-item-content">
+            <text class="menu-item-label">{{item.label}}</text>
+            <text wx:if="{{item.desc}}" class="menu-item-desc">{{item.desc}}</text>
+          </view>
+          <view wx:if="{{item.type === 'switch'}}" class="menu-switch {{item.enabled ? 'switch-on' : ''}}" bind:tap="onSwitchTap" data-key="{{item.key}}" catch:tap>
+            <view class="switch-knob"></view>
+          </view>
+          <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 关于菜单 ===== -->
+    <view class="menu-section">
+      <text class="menu-section-title">关于</text>
+      <view class="menu-card">
+        <view
+          wx:for="{{aboutMenu}}"
+          wx:key="label"
+          class="menu-item"
+          bind:tap="onMenuItemTap"
+          data-key="{{item.key}}"
+        >
+          <text class="menu-item-icon">{{item.icon}}</text>
+          <view class="menu-item-content">
+            <text class="menu-item-label">{{item.label}}</text>
+            <text class="menu-item-desc">{{item.desc}}</text>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+    </view>
+
+    <!-- ===== 退出登录 ===== -->
+    <view wx:if="{{isLoggedIn}}" class="logout-section">
+      <view class="logout-btn" bind:tap="onLogout">
+        <text>退出登录</text>
+      </view>
+    </view>
+
+    <text class="version-text">专注时钟 v2.1.0</text>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+</view>

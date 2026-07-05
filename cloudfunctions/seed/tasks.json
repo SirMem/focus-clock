@@ -1,0 +1,4 @@
+{"_openid": "o0x_sample_user_001", "text": "复习高数第三章", "description": "微积分重要考点：极限与连续", "priority": "urgent_important", "done": false, "pomodoros": 4, "completed": 0, "totalFocusMinutes": 75, "createdAt": 1782291850314, "updatedAt": 1782291850314}
+{"_openid": "o0x_sample_user_001", "text": "写项目文档", "description": "完成API接口文档初稿", "priority": "important_not_urgent", "done": false, "pomodoros": 2, "completed": 0, "totalFocusMinutes": 25, "createdAt": 1782464650314, "updatedAt": 1782464650314}
+{"_openid": "o0x_sample_user_001", "text": "买日用品", "description": "", "priority": "urgent_not_important", "done": true, "pomodoros": 0, "completed": 0, "totalFocusMinutes": 0, "createdAt": 1782551050314, "updatedAt": 1782637450314}
+{"_openid": "o0x_sample_user_001", "text": "学习英语单词", "description": "背30个托福核心词汇", "priority": "not_urgent_not_important", "done": false, "pomodoros": 2, "completed": 2, "totalFocusMinutes": 50, "createdAt": 1782637450314, "updatedAt": 1782637450314}

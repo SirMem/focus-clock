@@ -1,8 +1,14 @@
 App({
   onLaunch() {
-    // 小程序启动时执行
+    // 初始化云开发环境
+    // ⚠️ 请将 'your-env-id' 替换为你的微信云开发环境 ID
+    wx.cloud.init({
+      env: 'focus-d1g1k2nxl1bc84dd8',
+      traceUser: true
+    });
   },
   globalData: {
-    // 全局数据
+    userInfo: null,
+    isLoggedIn: false
   }
 });

@@ -1,0 +1,358 @@
+/* ===== 日记日期头 ===== */
+.diary-date-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 32rpx 32rpx 0;
+}
+
+.date-icon-wrap {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diary-date-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+}
+
+/* ===== 心情选择器 ===== */
+.emotion-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.section-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+  margin-bottom: 20rpx;
+}
+
+.emotion-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.emotion-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 20rpx 8rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+
+.emotion-active {
+  border-color: #4A90D9;
+  background: #EBF4FF;
+  box-shadow: 0 4rpx 16rpx rgba(74, 144, 217, 0.15);
+}
+
+.emotion-emoji {
+  font-size: 40rpx;
+}
+
+.emotion-label {
+  font-size: 20rpx;
+  color: #8A8A9A;
+}
+
+.emotion-active .emotion-label {
+  color: #4A90D9;
+  font-weight: 500;
+}
+
+/* ===== AI 引导提示 ===== */
+.ai-prompt-card {
+  margin: 24rpx 32rpx 0;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #FFF8E1;
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+}
+
+.ai-prompt-icon {
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.ai-prompt-content {
+  flex: 1;
+}
+
+.ai-prompt-title {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #E89B00;
+  margin-bottom: 8rpx;
+}
+
+.ai-prompt-text {
+  display: block;
+  font-size: 26rpx;
+  color: #6B5A00;
+  line-height: 1.5;
+}
+
+/* ===== 输入区域 ===== */
+.input-section {
+  padding: 24rpx 32rpx 0;
+}
+
+.input-card {
+  border-radius: 32rpx;
+  background: #fff;
+  border: 3rpx solid #E0E4EA;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.diary-textarea {
+  width: 100%;
+  min-height: 400rpx;
+  padding: 32rpx;
+  font-size: 28rpx;
+  color: #1A1A2E;
+  line-height: 1.6;
+  box-sizing: border-box;
+  font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 32rpx;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.input-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.input-action-btn {
+  font-size: 36rpx;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.input-action-btn:active {
+  opacity: 1;
+}
+
+.char-count {
+  font-size: 22rpx;
+}
+
+/* ===== 今日任务 ===== */
+.today-tasks-section {
+  padding: 24rpx 32rpx 0;
+}
+
+.today-tasks-card {
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.today-tasks-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.today-tasks-icon {
+  font-size: 32rpx;
+}
+
+.today-tasks-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.today-tasks-badge {
+  margin-left: auto;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  background: #EBF4FF;
+  font-size: 22rpx;
+  color: #4A90D9;
+}
+
+.today-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.today-task-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 24rpx;
+  background: #F5F7FA;
+}
+
+.today-task-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #4A4A6A;
+}
+
+.today-task-duration {
+  font-size: 22rpx;
+  color: #8A8A9A;
+}
+
+.today-task-check {
+  font-size: 24rpx;
+  color: #34C759;
+}
+
+/* ===== 保存按钮 ===== */
+.save-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 32rpx 0;
+  border-radius: 32rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  background: #E0E4EA;
+  color: #C0C4CC;
+  transition: all 0.2s;
+}
+
+.save-btn:active {
+  transform: scale(0.98);
+}
+
+.save-btn-active {
+  background: linear-gradient(135deg, #4A90D9, #6C5CE7);
+  color: #fff;
+  box-shadow: 0 16rpx 48rpx rgba(74, 144, 217, 0.3);
+}
+
+/* ===== 历史记录 ===== */
+.history-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.history-view-all {
+  font-size: 24rpx;
+  color: #4A90D9;
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 96rpx 0;
+}
+
+.history-empty-icon-wrap {
+  width: 192rpx;
+  height: 192rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+
+.history-empty-icon {
+  font-size: 72rpx;
+}
+
+.history-empty-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #8A8A9A;
+  margin-bottom: 8rpx;
+}
+
+.history-empty-desc {
+  font-size: 24rpx;
+  color: #C0C4CC;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  transition: all 0.2s;
+}
+
+.history-item:active {
+  transform: scale(0.98);
+}
+
+.history-item-emoji {
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.history-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-date {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-bottom: 8rpx;
+}
+
+.history-item-preview {
+  display: block;
+  font-size: 26rpx;
+  color: #4A4A6A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,197 @@
+.page-login {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(180deg, #FAFCFF 0%, #FFFFFF 60%);
+  font-family: -apple-system, 'Helvetica Neue', 'PingFang SC', sans-serif;
+  box-sizing: border-box;
+}
+
+/* ===== 品牌区域 ===== */
+.brand-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40rpx 120rpx;
+}
+
+/* 圆环容器 */
+.rings-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 60rpx;
+  width: 360rpx;
+  height: 360rpx;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.ring-1 {
+  width: 360rpx;
+  height: 360rpx;
+  background: radial-gradient(circle, rgba(231,76,60,0.06) 0%, transparent 70%);
+}
+
+.ring-2 {
+  width: 280rpx;
+  height: 280rpx;
+  border: 2rpx solid rgba(231,76,60,0.08);
+}
+
+.ring-3 {
+  width: 216rpx;
+  height: 216rpx;
+  border: 2rpx solid rgba(231,76,60,0.12);
+}
+
+/* Logo 容器 */
+.logo-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 192rpx;
+  height: 192rpx;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 8rpx 64rpx rgba(231,76,60,0.18), 0 4rpx 16rpx rgba(0,0,0,0.06);
+}
+
+.tomato-logo {
+  width: 144rpx;
+  height: 144rpx;
+}
+
+/* App 名称 */
+.app-name {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  letter-spacing: 8rpx;
+  margin-bottom: 24rpx;
+}
+
+/* Slogan */
+.slogan {
+  font-size: 28rpx;
+  color: #AAAAAA;
+  letter-spacing: 1rpx;
+  text-align: center;
+  max-width: 480rpx;
+  line-height: 1.6;
+}
+
+/* ===== 底部 CTA 区域 ===== */
+.cta-area {
+  padding: 0 40rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 分隔线 */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  width: 100%;
+  margin-bottom: 48rpx;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2rpx;
+  background: #F0F0F0;
+}
+
+.divider-text {
+  font-size: 24rpx;
+  color: #CCCCCC;
+  letter-spacing: 2rpx;
+  white-space: nowrap;
+}
+
+/* 登录按钮 */
+.login-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  width: 85%;
+  height: 100rpx;
+  background: #07C160;
+  border-radius: 24rpx !important;
+  box-shadow: 0 6rpx 40rpx rgba(7,193,96,0.35);
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
+  line-height: 100rpx;
+  padding: 0;
+  border: none;
+  transition: all 0.2s;
+  /* 清除按钮默认样式 */
+  margin: 0;
+}
+
+.login-btn::after {
+  border: none;
+}
+
+.btn-hover {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.btn-loading {
+  background: #07C160;
+  box-shadow: 0 4rpx 24rpx rgba(7,193,96,0.2);
+  cursor: not-allowed;
+}
+
+.btn-disabled {
+  background: #C8C8C8;
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.wechat-icon {
+  width: 44rpx;
+  height: 44rpx;
+  vertical-align: middle;
+}
+
+.spinner-icon {
+  width: 40rpx;
+  height: 40rpx;
+  vertical-align: middle;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 隐私提示 */
+.privacy-note {
+  font-size: 20rpx;
+  color: #CCCCCC;
+  margin-top: 32rpx;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 560rpx;
+}
+
+.privacy-note .link {
+  color: #AAAAAA;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}

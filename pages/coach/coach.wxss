@@ -1,0 +1,540 @@
+/* ===== AI 评分英雄卡 ===== */
+.ai-hero-card {
+  margin: 32rpx 32rpx 0;
+  padding: 48rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, #4A90D9 0%, #667EEA 50%, #8B5CF6 100%);
+  box-shadow: 0 24rpx 64rpx rgba(74, 144, 217, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-deco-1 {
+  position: absolute;
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  top: -60rpx;
+  right: -40rpx;
+}
+
+.hero-deco-2 {
+  position: absolute;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  bottom: -40rpx;
+  left: -20rpx;
+}
+
+.hero-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-left {
+  flex: 1;
+}
+
+.hero-label {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.hero-score-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.hero-score {
+  font-size: 112rpx;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -4rpx;
+}
+
+.hero-score-unit {
+  font-size: 36rpx;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.hero-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.hero-badge {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(255,255,255,0.2);
+}
+
+.hero-badge-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.hero-badge-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-badge-icon-text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: 700;
+}
+
+.hero-badge-desc {
+  font-size: 20rpx;
+  color: rgba(255,255,255,0.7);
+}
+
+.hero-avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 32rpx;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 32rpx;
+}
+
+.hero-avatar-text {
+  font-size: 72rpx;
+}
+
+/* ===== 趋势洞察 ===== */
+.insight-card {
+  margin: 32rpx 32rpx 0;
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.insight-icon {
+  font-size: 36rpx;
+}
+
+.insight-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.insight-text {
+  display: block;
+  font-size: 26rpx;
+  color: #4A4A6A;
+  line-height: 1.6;
+  margin-bottom: 24rpx;
+}
+
+.insight-highlight-green {
+  font-weight: 600;
+  color: #34C759;
+}
+
+.insight-highlight-blue {
+  font-weight: 600;
+  color: #4A90D9;
+}
+
+.sparkline-wrap {
+  height: 128rpx;
+  margin: 0 -16rpx;
+}
+
+.sparkline {
+  width: 100%;
+  height: 100%;
+}
+
+.sparkline-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+}
+
+.sparkline-label {
+  font-size: 22rpx;
+  color: #8A8A9A;
+}
+
+.sparkline-up {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #34C759;
+}
+
+/* ===== 今日建议 ===== */
+.suggestion-card {
+  margin: 32rpx 32rpx 0;
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: #FAFBFF;
+  border: 4rpx solid #E6EDFF;
+  box-shadow: 0 4rpx 16rpx rgba(74, 144, 217, 0.08);
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.suggestion-icon {
+  font-size: 36rpx;
+}
+
+.suggestion-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.suggestion-text {
+  display: block;
+  font-size: 26rpx;
+  color: #4A4A6A;
+  line-height: 1.6;
+  margin-bottom: 32rpx;
+}
+
+.suggestion-highlight {
+  font-weight: 600;
+  color: #4A90D9;
+}
+
+.suggestion-btn {
+  display: inline-block;
+  padding: 16rpx 48rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: #4A90D9;
+  color: #fff;
+  transition: all 0.2s;
+}
+
+.suggestion-btn:active {
+  transform: scale(0.95);
+}
+
+.suggestion-btn-disabled {
+  background: #E0E4EA;
+  color: #8A8A9A;
+}
+
+/* ===== 成就徽章 ===== */
+.achievement-section {
+  padding: 32rpx 32rpx 0;
+}
+
+.achievement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.achievement-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.achievement-view-all {
+  font-size: 24rpx;
+  color: #4A90D9;
+}
+
+.achievement-grid {
+  display: grid;
+  gap: 24rpx;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.achievement-item {
+  padding: 32rpx 16rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.achievement-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+}
+
+.achievement-icon {
+  font-size: 40rpx;
+}
+
+.achievement-label {
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-bottom: 8rpx;
+}
+
+.achievement-value {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+/* ===== 周报预览 ===== */
+.weekly-card {
+  margin: 32rpx 32rpx 0;
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.weekly-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+}
+
+.weekly-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.weekly-view-all {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 22rpx;
+  color: #4A90D9;
+}
+
+/* Bar chart */
+.weekly-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 16rpx;
+  height: 256rpx;
+  padding-bottom: 40rpx;
+}
+
+.weekly-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.weekly-bar-track {
+  flex: 1;
+  width: 100%;
+  background: #F0F2F5;
+  border-radius: 12rpx 12rpx 0 0;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  max-height: 216rpx;
+}
+
+.weekly-bar-fill {
+  width: 100%;
+  border-radius: 12rpx 12rpx 0 0;
+  background: linear-gradient(180deg, #667EEA 0%, #4A90D9 100%);
+  transition: height 0.5s;
+  min-height: 8rpx;
+}
+
+.weekly-bar-label {
+  font-size: 20rpx;
+  color: #8A8A9A;
+  margin-top: 12rpx;
+}
+
+/* 周统计摘要 */
+.weekly-stats {
+  display: flex;
+  padding-top: 32rpx;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.weekly-stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.weekly-stat-value {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #4A90D9;
+  margin-bottom: 8rpx;
+}
+
+.weekly-stat-label {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+}
+
+/* ===== 历史建议 ===== */
+.history-suggestions {
+  padding: 32rpx 32rpx 0;
+}
+
+.history-suggestions-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 24rpx;
+}
+
+.history-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.history-suggestion-item {
+  display: flex;
+  gap: 24rpx;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}
+
+.history-suggestion-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.history-icon-accepted {
+  background: #EBF4FF;
+}
+
+.history-suggestion-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-suggestion-date {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-bottom: 8rpx;
+}
+
+.history-suggestion-text {
+  display: block;
+  font-size: 26rpx;
+  color: #4A4A6A;
+  line-height: 1.5;
+}
+
+/* ===== 教练设置 ===== */
+.coach-settings {
+  padding: 32rpx 32rpx 0;
+}
+
+.coach-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.coach-settings-btn:active {
+  transform: scale(0.98);
+}
+
+.coach-settings-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.coach-settings-icon-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coach-settings-icon {
+  font-size: 36rpx;
+}
+
+.coach-settings-info {
+  flex: 1;
+}
+
+.coach-settings-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+
+.coach-settings-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+}

@@ -15,3 +15,26 @@
 ## 维护规则
 
 - 每次新增界面模式、组件规范或交互规则后，必须检查并更新本文件。
+
+---
+
+## 微信小程序 canvas 环图尺寸规则（避坑）
+
+使用 `<canvas canvas-id="xxx">` 旧 API 绘制环状图时：
+
+| 概念 | 设置方式 | 说明 |
+|------|----------|------|
+| **坐标系统** | `width`/`height` **属性**（px） | 决定 ctx.arc() 等 API 的坐标范围 |
+| **显示尺寸** | CSS `width`/`height`（rpx） | 决定用户看到的元素大小 |
+
+**黄金规则**：两者必须匹配，否则 canvas 会变形/溢出/不显示。
+
+**实践方案**：
+```
+<canvas canvas-id="myRing" width="100" height="100" style="width: 200rpx; height: 200rpx;"></canvas>
+```
+- 属性固定 `width="100" height="100"`（px）
+- CSS 用 `200rpx`（≈100px，与坐标系匹配）
+- 所有坐标按 0‑100 计算：`cx=50, cy=50, r=36, lw=8`
+- 禁用 `{{}}` 数据绑定到 width/height 属性
+- 勿用 type="2d" + SelectorQuery 方式（旧 API 更稳定）
