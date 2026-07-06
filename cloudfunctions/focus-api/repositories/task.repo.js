@@ -58,7 +58,8 @@ class TaskRepo {
    */
   async findById(id) {
     const res = await this.collection.doc(id).get();
-    return res.data[0] || null;
+    if (Array.isArray(res.data)) return res.data[0] || null;
+    return res.data || null;
   }
 
   /**

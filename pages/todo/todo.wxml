@@ -23,7 +23,7 @@
       <view class="quick-add-inner">
         <input
           class="add-input"
-          placeholder="添加新任务..."
+          placeholder="快速添加任务..."
           placeholder-style="color:#C0C4CC;font-size:14px"
           value="{{input}}"
           bindinput="onInputChange"
@@ -100,18 +100,17 @@
 
             <!-- 任务内容 -->
             <view class="task-content">
-              <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
-              <view class="task-meta">
-                <text class="meta-pomodoro">🍅 ×{{item.completed}}/{{item.pomodoros}}</text>
+              <view class="task-title-row">
+                <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
+                <text class="priority-badge priority-{{item.priority}}">{{item.priorityLabel}}</text>
               </view>
-            </view>
-
-            <!-- 优先级指示（仅保留圆点） -->
-            <view class="task-actions">
-              <view
-                class="priority-dot"
-                style="background: {{priorityColors[item.priority]}}"
-              ></view>
+              <text wx:if="{{item.description}}" class="task-desc">{{item.description}}</text>
+              <view class="task-meta">
+                <text wx:if="{{item.hasDue}}" class="meta-chip meta-due">{{item.dueText}}</text>
+                <text wx:if="{{item.hasRepeat}}" class="meta-chip meta-repeat">{{item.repeatText}}</text>
+                <text wx:if="{{item.hasSubtasks}}" class="meta-chip meta-subtask">{{item.subtaskProgressText}}</text>
+                <text class="meta-chip meta-pomodoro">{{item.pomodoroText}}</text>
+              </view>
             </view>
           </view>
         </view>
@@ -136,6 +135,144 @@
       <t-icon name="add" size="44rpx" color="#fff" />
     </view>
 
+  </view>
+
+  <!-- ===== Task v2 新建任务弹窗 ===== -->
+  <view wx:if="{{showTaskModal}}" class="modal-mask" bind:tap="closeTaskModal">
+    <view class="task-sheet" catchtap="stopModalTap">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <view>
+          <text class="sheet-title">新建任务</text>
+          <text class="sheet-subtitle">把任务规划清楚，再开始专注</text>
+        </view>
+        <view class="sheet-close" bind:tap="closeTaskModal">
+          <t-icon name="close" size="36rpx" color="#8A8A9A" />
+        </view>
+      </view>
+
+      <scroll-view class="sheet-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="form-section">
+          <text class="form-label">任务标题</text>
+          <input
+            class="form-input"
+            placeholder="例如：复习高数第二章"
+            value="{{taskForm.title}}"
+            maxlength="100"
+            bindinput="onFormTitleInput"
+          />
+        </view>
+
+        <view class="form-section">
+          <text class="form-label">任务说明</text>
+          <textarea
+            class="form-textarea"
+            placeholder="可选：补充任务背景、范围或要求"
+            value="{{taskForm.description}}"
+            maxlength="500"
+            auto-height="{{false}}"
+            bindinput="onFormDescriptionInput"
+          />
+        </view>
+
+        <view class="form-section">
+          <text class="form-label">优先级</text>
+          <view class="option-row">
+            <view
+              wx:for="{{priorityOptions}}"
+              wx:key="key"
+              class="option-chip {{taskForm.priority === item.key ? 'option-active' : ''}}"
+              data-key="{{item.key}}"
+              bind:tap="onPrioritySelect"
+            >{{item.label}}</view>
+          </view>
+        </view>
+
+        <view class="form-section">
+          <text class="form-label">预计番茄</text>
+          <view class="option-row">
+            <view
+              wx:for="{{pomodoroOptions}}"
+              wx:key="*this"
+              class="option-chip {{taskForm.estimatedPomodoros === item ? 'option-active' : ''}}"
+              data-value="{{item}}"
+              bind:tap="onPomodoroSelect"
+            >🍅 {{item}}</view>
+          </view>
+        </view>
+
+        <view class="toggle-card">
+          <view class="toggle-head" bind:tap="toggleFormSubtasks">
+            <view>
+              <text class="toggle-title">拆分子任务</text>
+              <text class="toggle-desc">适合复杂任务，按步骤推进</text>
+            </view>
+            <view class="switch {{taskForm.enableSubtasks ? 'switch-on' : ''}}"><view></view></view>
+          </view>
+          <view wx:if="{{taskForm.enableSubtasks}}" class="subtask-editor">
+            <view wx:for="{{taskForm.subtasks}}" wx:key="id" class="subtask-row">
+              <input
+                class="subtask-input"
+                placeholder="输入一个步骤"
+                value="{{item.title}}"
+                data-index="{{index}}"
+                bindinput="onSubtaskInput"
+              />
+              <view class="subtask-remove" data-index="{{index}}" bind:tap="removeSubtask">
+                <t-icon name="close-circle" size="34rpx" color="#C0C4CC" />
+              </view>
+            </view>
+            <view class="add-subtask" bind:tap="addSubtask">+ 添加步骤</view>
+          </view>
+        </view>
+
+        <view class="toggle-card">
+          <view class="toggle-head" bind:tap="toggleFormDue">
+            <view>
+              <text class="toggle-title">设置截止时间</text>
+              <text class="toggle-desc">让今天必须完成的任务更明确</text>
+            </view>
+            <view class="switch {{taskForm.enableDue ? 'switch-on' : ''}}"><view></view></view>
+          </view>
+          <view wx:if="{{taskForm.enableDue}}" class="date-time-row">
+            <picker mode="date" value="{{taskForm.dueDate}}" bindchange="onDueDateChange">
+              <view class="picker-box">{{taskForm.dueDate}}</view>
+            </picker>
+            <picker mode="time" value="{{taskForm.dueTime}}" bindchange="onDueTimeChange">
+              <view class="picker-box">{{taskForm.dueTime}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="toggle-card">
+          <view class="toggle-head" bind:tap="toggleFormRepeat">
+            <view>
+              <text class="toggle-title">重复任务</text>
+              <text class="toggle-desc">适合习惯、复盘、周期任务</text>
+            </view>
+            <view class="switch {{taskForm.enableRepeat ? 'switch-on' : ''}}"><view></view></view>
+          </view>
+          <view wx:if="{{taskForm.enableRepeat}}" class="option-row repeat-row">
+            <view
+              wx:for="{{repeatOptions}}"
+              wx:key="key"
+              class="option-chip {{taskForm.repeatType === item.key ? 'option-active' : ''}}"
+              data-key="{{item.key}}"
+              bind:tap="onRepeatSelect"
+            >{{item.label}}</view>
+          </view>
+        </view>
+
+        <view class="sheet-bottom-space"></view>
+      </scroll-view>
+
+      <view class="sheet-actions">
+        <view class="cancel-btn" bind:tap="closeTaskModal">取消</view>
+        <view class="save-btn {{savingTask ? 'save-disabled' : ''}}" bind:tap="saveTaskFromModal">
+          {{savingTask ? '保存中...' : '保存任务'}}
+        </view>
+      </view>
+    </view>
   </view>
 
 </view>
