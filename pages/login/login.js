@@ -62,10 +62,12 @@ Page({
     wx.login({
       success: (res) => {
         if (!res.code) {
+        
           wx.showToast({ title: '获取登录凭证失败', icon: 'none' });
           this._setBtnState('default');
           return;
         }
+        console.log(res);
         this._doCloudLogin(res.code);
       },
       fail: (err) => {

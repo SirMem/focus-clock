@@ -19,17 +19,21 @@
     <!-- ===== 个人信息卡片 ===== -->
     <view class="profile-card">
       <view class="profile-info">
-        <view class="avatar-wrap" bind:tap="onAvatarTap">
-          <view wx:if="{{isLoggedIn}}" class="avatar-content">
+        <!-- 头像：chooseAvatar 主动授权 -->
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" wx:if="{{isLoggedIn}}">
+          <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="avatar-content">
             <text class="avatar-emoji">🧑‍💻</text>
           </view>
-          <view wx:else class="avatar-content avatar-guest">
+        </button>
+        <view wx:else class="avatar-wrap" bind:tap="onAvatarTap">
+          <view class="avatar-content avatar-guest">
             <t-icon name="user-avatar" size="48rpx" color="#fff" />
           </view>
         </view>
         <view class="user-info">
-          <text wx:if="{{isLoggedIn}}" class="user-name">李明远</text>
-          <text wx:if="{{isLoggedIn}}" class="user-desc">专注达人 · 连续打卡 15 天</text>
+          <input wx:if="{{isLoggedIn}}" class="nickname-input" type="nickname" value="{{nickName}}" bindblur="onNicknameBlur" placeholder="点击设置昵称" />
+          <text wx:if="{{isLoggedIn}}" class="user-desc">点击头像和昵称可完善资料</text>
           <block wx:else>
             <text class="user-name">点击登录</text>
             <text class="user-desc">登录后查看完整数据</text>
@@ -39,6 +43,15 @@
           <t-icon name="settings" size="36rpx" color="rgba(255,255,255,0.8)" />
         </view>
       </view>
+      <button
+        wx:if="{{isLoggedIn}}"
+        class="profile-save-btn {{profileDirty ? 'profile-save-btn-active' : ''}}"
+        disabled="{{!profileDirty || profileSubmitting}}"
+        loading="{{profileSubmitting}}"
+        bindtap="onSaveProfile"
+      >
+        {{profileDirty ? '保存资料' : '资料已同步'}}
+      </button>
     </view>
 
     <!-- ===== 统计摘要行 ===== -->
@@ -61,7 +74,7 @@
       </view>
       <text class="goal-subtitle">专注 {{monthlyGoalCurrent}}h / {{monthlyGoalTarget}}h</text>
       <view class="goal-progress-bar">
-        <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%;"></view>
+        <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}"></view>
       </view>
       <text class="goal-remain">还需 {{goalRemain}}h 达成目标</text>
     </view>

@@ -161,6 +161,26 @@ class UserRepo {
   }
 
   /**
+   * 更新用户头像昵称资料
+   * @param {string} openId
+   * @param {{ nickName?: string, avatarUrl?: string }} profile
+   * @returns {Promise<object>} 更新后的用户文档
+   */
+  async updateProfile(openId, { nickName, avatarUrl } = {}) {
+    const existing = await this.findByOpenId(openId);
+    if (!existing) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    const updateData = { updatedAt: Date.now() };
+    if (nickName) updateData.nickName = nickName;
+    if (avatarUrl) updateData.avatarUrl = avatarUrl;
+
+    await this.collection.doc(existing._id).update({ data: updateData });
+    return { ...existing, ...updateData, _id: existing._id };
+  }
+
+  /**
    * 获取用户设置
    * @param {string} openId
    * @returns {Promise<object|null>}

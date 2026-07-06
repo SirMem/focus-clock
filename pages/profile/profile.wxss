@@ -26,6 +26,35 @@
   transform: scale(0.95);
 }
 
+/* chooseAvatar 按钮 — 重置默认样式，保持与 avatar-wrap 一致 */
+.avatar-btn {
+  width: 128rpx !important;
+  height: 128rpx !important;
+  border-radius: 50% !important;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  line-height: 1 !important;
+  transition: all 0.2s;
+}
+
+.avatar-btn::after {
+  border: none !important;
+}
+
+.avatar-btn:active {
+  transform: scale(0.95);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
 .avatar-content {
   width: 100%;
   height: 100%;
@@ -56,6 +85,24 @@
   margin-bottom: 8rpx;
 }
 
+/* 昵称输入框 — 与 .user-name 视觉一致 */
+.nickname-input {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8rpx;
+  padding: 0;
+  background: transparent;
+  border: none;
+  height: auto;
+  min-height: auto;
+}
+
+.nickname-input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
 .user-desc {
   display: block;
   font-size: 24rpx;
@@ -75,6 +122,35 @@
 
 .settings-btn:active {
   transform: scale(0.9);
+}
+
+.profile-save-btn {
+  width: 100%;
+  height: 72rpx;
+  margin: 28rpx 0 0;
+  padding: 0;
+  border-radius: 20rpx !important;
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.8);
+  font-size: 26rpx;
+  font-weight: 500;
+  line-height: 72rpx;
+  border: none;
+}
+
+.profile-save-btn::after {
+  border: none;
+}
+
+.profile-save-btn-active {
+  background: #fff;
+  color: #4A90D9;
+}
+
+.profile-save-btn[disabled] {
+  opacity: 0.75;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.14);
 }
 
 /* ===== 统计摘要 ===== */
