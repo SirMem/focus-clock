@@ -1,6 +1,7 @@
 node_modules/
 miniprogram_npm/
 .vscode/
+.claude/worktrees/
 *.log
 .DS_Store
 project.private.config.json

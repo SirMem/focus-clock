@@ -49,6 +49,7 @@ function callAPI(url, data = {}, options = {}) {
   }).then(res => {
     const result = res && res.result;
 
+    console.log(result);
     if (!result) {
       console.warn('[callAPI] empty cloud function result:', url, res);
       return { code: -1, message: '接口无响应' };

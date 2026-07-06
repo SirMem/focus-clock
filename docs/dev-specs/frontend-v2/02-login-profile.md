@@ -1,4 +1,9 @@
-# 02-login-profile — 静默登录 + 我的页真实用户对接
+# 02-login-profile — 登录鉴权 + 我的页用户资料对接
+
+> 状态: ✅ 已由 `07-login-fix.md` 覆盖并升级
+> 注意: 本文件保留为 Login/Profile 主模块说明；具体合规修复以 `07-login-fix.md` 为准。
+
+---
 
 ## 依赖
 
@@ -7,82 +12,91 @@
 - `miniprogram/api/auth.js`
 - `miniprogram/api/user.api.js`
 - `miniprogram/api/request.js`
-- `cloudfunctions/focus-api` 的 `wx-server-sdk` 身份上下文
-
-## 服务端登录语义
-
-- 前端不传 openid。
-- 服务端通过 `wx-server-sdk` 的 `cloud.getWXContext().OPENID` 获取可信用户身份。
-- `users` 集合以 OPENID 作为文档 `_id`：`users/{OPENID}`。
-- 首次登录默认 `nickName` 为 `微信用户`、`avatarUrl` 为空。
-- 头像昵称不在登录过程中弹窗采集，而是在 Profile 页通过 `chooseAvatar` / `type="nickname"` 主动完善。
 
 ---
 
-## 1. `pages/login/login.js`
+## 允许修改文件
+
+| 文件 | 内容 |
+|------|------|
+| `pages/login/login.js` | `wx.login()` 鉴权、登录态保存 |
+| `pages/profile/profile.js` | 用户信息/设置读取、头像昵称主动采集 |
+| `pages/profile/profile.wxml` | `chooseAvatar` + `type="nickname"` |
+| `pages/profile/profile.wxss` | 头像按钮/昵称输入/保存按钮样式 |
+| `miniprogram/api/user.api.js` | `login(code)`、`updateProfile()` |
+| `cloudfunctions/focus-api/routes/user.routes.js` | `user/login`、`user/profile/update` |
+| `cloudfunctions/focus-api/repositories/user.repo.js` | 用户资料更新 |
+
+---
+
+## 1. Login 鉴权流程
 
 ### 目标行为
 
 点击登录：
 
 1. 按钮进入 loading。
-2. 调用 `wx.login()` 获取 code（兼容旧接口形态；服务端不再依赖 code 换 openid）。
+2. 调用 `wx.login()` 获取临时 `code`。
 3. 调用 `userAPI.login(code)`。
-4. 登录成功后调用 `saveLoginState({ openid, user })`。
-5. 更新 `app.globalData.userInfo` 和 `app.globalData.isLoggedIn`。
-6. `wx.switchTab({ url: '/pages/focus/focus' })`。
+4. 后端 `user/login` 用 `code + WX_APP_SECRET` 调微信 `jscode2session` 换取 `openid`。
+5. 后端创建/读取用户，并返回 `{ openid, user }`。
+6. 前端调用 `saveLoginState({ openid, user })`。
+7. 更新 `app.globalData.userInfo` 与 `app.globalData.isLoggedIn`。
+8. `wx.switchTab({ url: '/pages/focus/focus' })`。
 
 ### 禁止
 
-- 不要在登录页调用 `wx.getUserProfile`。
-- 不要在登录页弹出头像昵称填写框。
-- 不要由前端传 openid。
-- 不要直接操作 `wx.setStorageSync('openid'...)`，改用 `saveLoginState`。
+- 禁止调用 `wx.getUserProfile`。
+- 禁止把昵称头像塞进 `user/login`。
+- 禁止把后端 `session_key` 返回给小程序端。
+- 禁止无 `WX_APP_SECRET` 时伪造合规 code2session。
 
 ---
 
-## 2. `pages/profile/profile.js`
+## 2. Profile 用户资料流程
 
 ### 目标行为
 
 `onLoad()`：
 
-1. 只做页面尺寸初始化。
+1. 读取本地登录态 `getLoginState()`。
+2. 未登录：显示未登录状态。
+3. 已登录：并行调用 `userAPI.getInfo()` + `userAPI.getSettings()`。
+4. 401/404：清理登录态并提示。
+5. 成功：设置 `isLoggedIn=true`, `userInfo`, `settings`, `avatarUrl`, `nickName`。
 
-`onShow()`：
+### 头像采集
 
-1. 调 `_loadProfile()`。
-2. `_loadProfile()` 读取本地登录态 `getLoginState()`。
-3. 如果未登录：`isLoggedIn=false`，页面保持未登录状态。
-4. 如果已登录：
-   - 调 `userAPI.getInfo()` 获取用户基本信息。
-   - 调 `userAPI.getSettings()` 获取用户设置。
-   - 设置 data：`isLoggedIn=true`, `userInfo`, `settings`, `avatarUrl`, `nickName`。
-5. 如果 `userAPI.getInfo()` 返回 401/404，清理本地登录态并显示未登录。
+```html
+<button open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+```
 
-### 资料完善
+- 用户主动点击头像按钮。
+- `onChooseAvatar(e)` 拿到临时 `avatarUrl`。
+- 先本地预览，不立即保存。
+- 点击保存资料时，若为临时路径则 `wx.cloud.uploadFile` 上传云存储。
 
-- 头像：`button[open-type=chooseAvatar]`。
-- 昵称：`input[type=nickname]`。
-- 点击保存后调用 `userAPI.updateProfile({ nickName, avatarUrl })`。
+### 昵称采集
 
-### onLogout()
+```html
+<input type="nickname" bindblur="onNicknameBlur" />
+```
 
-退出登录时必须：
-
-- 调 `clearLoginState()`。
-- `app.globalData.userInfo = null`。
-- `app.globalData.isLoggedIn = false`。
-- `this.setData({ isLoggedIn: false, userInfo: null, settings: null })`。
+- 用户主动点击昵称输入框。
+- 键盘上方展示微信昵称建议。
+- `onNicknameBlur` 收集值并标记 dirty。
+- 点击保存资料时调用 `userAPI.updateProfile({ nickName, avatarUrl })`。
 
 ---
 
-## 验收检查
+## 3. 验收检查
 
-- [ ] 登录页不调用 `wx.getUserProfile`。
-- [ ] 登录页不弹头像昵称填写框。
-- [ ] 登录成功通过 `saveLoginState` 保存登录态。
-- [ ] 登录页不直接 `wx.setStorageSync('openid'...)`。
-- [ ] Profile 页在 `onShow` 从 `userAPI.getInfo/getSettings` 获取数据。
-- [ ] Profile 页使用 `chooseAvatar` / `type="nickname"` 更新资料。
+- [ ] 登录页调用 `wx.login()`。
+- [ ] `userAPI.login(code)` 只传 code。
+- [ ] 后端 `user/login` 执行 `jscode2session`。
+- [ ] 全项目无 active `wx.getUserProfile`。
+- [ ] Profile 页头像使用 `open-type="chooseAvatar"`。
+- [ ] Profile 页昵称使用 `type="nickname"`。
+- [ ] 保存资料调用 `user/profile/update`。
+- [ ] 头像临时路径会上传云存储再保存。
 - [ ] Profile 退出登录会 `clearLoginState`。

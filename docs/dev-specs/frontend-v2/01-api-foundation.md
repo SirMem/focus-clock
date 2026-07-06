@@ -137,15 +137,17 @@ function formatDuration(minutes) {}
 
 ### mapDiaryToView(entry)
 
+> MVP 救援修正：Diary 后端 canonical 字段是 `createdAt/emotionTags/content`。`date/mood/title` 只作为历史兼容 fallback。
+
 输出：
 ```javascript
 {
   id: entry._id,
-  date: entry.date,
-  emotion: entry.mood || 'calm',
+  date: formatDate(entry.createdAt || entry.date),
+  emotion: (entry.emotionTags && entry.emotionTags[0]) || entry.mood || '平静',
   preview: (entry.content || '').slice(0, 50) + ((entry.content || '').length > 50 ? '...' : ''),
   content: entry.content || '',
-  title: entry.title || ''
+  title: entry.title || deriveTitle(entry.createdAt, entry.content)
 }
 ```
 

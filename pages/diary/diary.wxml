@@ -74,12 +74,12 @@
       </view>
     </view>
 
-    <!-- ===== 今日完成的任务 ===== -->
+    <!-- ===== 已完成任务摘要 ===== -->
     <view class="today-tasks-section">
       <view class="today-tasks-card">
         <view class="today-tasks-header">
           <text class="today-tasks-icon">📋</text>
-          <text class="today-tasks-title">今日完成</text>
+          <text class="today-tasks-title">已完成摘要</text>
           <view class="today-tasks-badge">
             <text>{{todayTasks.length}} 个任务</text>
           </view>
@@ -101,7 +101,7 @@
     <!-- ===== 保存按钮 ===== -->
     <view class="save-section">
       <view
-        class="save-btn {{content.trim() ? 'save-btn-active' : ''}}"
+        class="save-btn {{canSave ? 'save-btn-active' : ''}}"
         bind:tap="onSave"
       >
         <text>保存今日记录</text>
@@ -135,7 +135,7 @@
           bind:tap="onHistoryTap"
           data-id="{{item.id}}"
         >
-          <text class="history-item-emoji">{{item.emotion}}</text>
+          <text class="history-item-emoji">{{item.emotionEmoji}}</text>
           <view class="history-item-content">
             <text class="history-item-date">{{item.date}}</text>
             <text class="history-item-preview">{{item.preview}}</text>

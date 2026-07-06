@@ -27,6 +27,7 @@ module.exports = async (ctx, next) => {
   // 白名单路由直接放行
   if (NO_AUTH_ROUTES.includes(ctx.event.$url)) {
     ctx.OPENID = null;
+    console.log("放行")
     await next();
     return;
   }

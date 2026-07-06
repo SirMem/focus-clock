@@ -3,7 +3,7 @@ const EMOTIONS = [
   { emoji: '😐', label: '平静', id: 'calm' },
   { emoji: '😢', label: '沮丧', id: 'sad' },
   { emoji: '😤', label: '焦虑', id: 'anxious' },
-  { emoji: '🧘', label: '专注', id: 'focused' },
+  { emoji: '🤩', label: '兴奋', id: 'excited' },
 ];
 
 const AI_PROMPTS = [
@@ -17,7 +17,7 @@ const AI_PROMPTS = [
 const diaryAPI = require('../../miniprogram/api/diary.api');
 const taskAPI = require('../../miniprogram/api/task.api');
 const statsAPI = require('../../miniprogram/api/stats.api');
-const { mapDiaryToView } = require('../../miniprogram/api/mappers');
+const { mapDiaryToView, mapEmotionToCanonical } = require('../../miniprogram/api/mappers');
 
 Page({
   data: {
@@ -29,6 +29,7 @@ Page({
     selectedEmotion: 'calm',
     currentPrompt: AI_PROMPTS[0],
     content: '',
+    canSave: false,
     maxChars: 500,
     charCount: 0,
     todayTasks: [],
@@ -63,7 +64,8 @@ Page({
       const res = await diaryAPI.list({ pageSize: 50 });
       wx.hideLoading();
       if (res.code === 0) {
-        const historyEntries = (res.data.entries || []).map(mapDiaryToView);
+        const diaries = (res.data && res.data.diaries) || [];
+        const historyEntries = diaries.map(mapDiaryToView);
         this.setData({ historyEntries });
       } else {
         wx.showToast({ title: '日记加载失败', icon: 'none' });
@@ -80,7 +82,13 @@ Page({
         taskAPI.list({ isDone: true }, 1, 20),
         statsAPI.today(),
       ]);
-      const todayTasks = (tasksRes.data.tasks || []).slice(0, 3).map(t => ({
+
+      if (tasksRes.code !== 0 || statsRes.code !== 0) {
+        wx.showToast({ title: '摘要加载失败', icon: 'none' });
+        return;
+      }
+
+      const todayTasks = ((tasksRes.data && tasksRes.data.tasks) || []).slice(0, 3).map(t => ({
         id: t._id,
         text: t.title,
         duration: Math.round((t.completedPomodoros || 0) * 25),
@@ -91,7 +99,8 @@ Page({
         todayStats: statsRes.data,
       });
     } catch (err) {
-      console.error('加载今日摘要失败', err);
+      console.error('加载已完成任务摘要失败', err);
+      wx.showToast({ title: '摘要加载失败', icon: 'none' });
     }
   },
 
@@ -104,29 +113,32 @@ Page({
     const val = e.detail.value;
     this.setData({
       content: val,
+      canSave: val.trim().length > 0,
       charCount: val.length,
     });
   },
 
   async onSave() {
-    if (!this.data.content.trim()) {
+    const content = this.data.content.trim();
+    if (!content) {
       wx.showToast({ title: '请先写点内容', icon: 'none' });
       return;
     }
 
     wx.showLoading({ title: '保存中...' });
     try {
-      const res = await diaryAPI.create(
-        this.data.currentPrompt,
-        this.data.content,
-        this.data.selectedEmotion,
-        []
-      );
+      const res = await diaryAPI.create({
+        content,
+        emotionTags: [mapEmotionToCanonical(this.data.selectedEmotion)],
+        tasks: [],
+      });
       wx.hideLoading();
       if (res.code === 0) {
         wx.showToast({ title: '保存成功', icon: 'success' });
-        this.setData({ content: '', charCount: 0 });
+        this.setData({ content: '', canSave: false, charCount: 0 });
         await this._loadEntries();
+      } else {
+        wx.showToast({ title: res.message || '保存失败', icon: 'none' });
       }
     } catch (err) {
       wx.hideLoading();

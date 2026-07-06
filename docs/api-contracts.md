@@ -895,6 +895,109 @@ type TaskV2 = {
 
 ---
 
+### 7.3 coach/weekly-report — AI 周报
+
+**路由**: `coach/weekly-report`
+**方法**: GET
+**依赖**: DeepSeek LLM（失败时降级到规则引擎）
+
+#### 请求
+
+```typescript
+{} // 无参数，基于本周（周一~周日）数据生成
+```
+
+#### 响应
+
+```typescript
+// AI 生成成功
+{
+  code: 0,
+  data: {
+    report: string;                    // AI 生成的完整周报（200-400字）
+    highlights: Array<{
+      emoji: string;                   // e.g. "🔥"
+      text: string;                    // e.g. "连续5天保持专注"
+    }>;
+    suggestion: string;                // 最核心的一条改进建议
+    emotionInsight: string | null;     // 情绪关联发现，无数据则为 null
+    weekSummary: {
+      totalFocusMinutes: number;
+      totalPomodoros: number;
+      activeDays: number;              // 0-7
+      avgDailyFocus: number;           // 分钟
+    };
+    generatedBy: 'ai' | 'rule';       // AI 生成 or 规则引擎降级
+    generatedAt: number;               // unix 毫秒时间戳
+  }
+}
+
+// AI 失败，规则引擎降级
+{
+  code: 0,
+  data: {
+    report: string;                    // 规则引擎基础文案
+    highlights: [];
+    suggestion: string;
+    emotionInsight: null;
+    weekSummary: { ... };
+    generatedBy: 'rule';
+    generatedAt: number;
+  }
+}
+```
+
+---
+
+### 7.4 coach/correlation — 情绪-专注关联分析
+
+**路由**: `coach/correlation`
+**方法**: GET
+**状态**: P1（契约已冻结，实现待后续）
+**依赖**: DeepSeek LLM
+
+#### 请求
+
+```typescript
+{} // 无参数，基于近 30 天数据
+```
+
+#### 响应
+
+```typescript
+{
+  code: 0,
+  data: {
+    correlations: Array<{
+      emotion: string;                  // 情绪标签 e.g. "焦虑"
+      days: number;                     // 该情绪出现天数
+      avgFocusMinutes: number;          // 该情绪日的平均专注时长
+      overallAvg: number;               // 全时段平均（对照组）
+      diff: string;                     // 差异百分比 e.g. "-40%" / "+12%"
+      interpretation: string;           // AI 一句话解读
+    }>;
+    insight: string;                    // AI 总结
+    disclaimer: string;                 // 免责声明
+    generatedBy: 'ai' | 'rule';
+    generatedAt: number;
+    _missing: string[];                 // 缺失的数据源
+  }
+}
+```
+
+---
+
+### 7.5 coach 模块路由汇总
+
+| 路由 | 方法 | 状态 | 说明 |
+|------|------|------|------|
+| `coach/score` | GET | ✅ 已上线 | 规则引擎评分 |
+| `coach/tip` | GET | ✅ 已上线 | 规则引擎建议 |
+| `coach/weekly-report` | GET | 📋 待实现 | AI 周报 |
+| `coach/correlation` | GET | 🔲 P1 | AI 关联分析 |
+
+---
+
 ## 附录 A: 数据库集合设计
 
 | 集合名 | 说明 | 索引建议 |
@@ -904,6 +1007,7 @@ type TaskV2 = {
 | `daily_summaries` | 日汇总（定时/实时更新） | `_openid` + `date` |
 | `diaries` | 日记 | `_openid` + `createdAt` |
 | `users` | 用户/设置 | `_openid`（唯一） |
+| `ai_prompts` | AI Prompt 模板（热更新） | `type` + `isActive` |
 
 ### 集合字段定义
 
@@ -995,10 +1099,31 @@ type TaskV2 = {
 
 ---
 
+#### `ai_prompts`
+
+```typescript
+{
+  _id: string;
+  type: 'weekly_report' | 'correlation';  // prompt 类型
+  version: number;                         // 版本号，查询时取最大
+  systemPrompt: string;                    // system role 的 prompt 文本
+  userPromptTemplate: string;              // user role 的模板（支持 {{placeholder}}）
+  model?: string;                          // 覆盖默认 model
+  temperature?: number;                    // 覆盖默认 temperature
+  maxTokens?: number;                      // 覆盖默认 max_tokens
+  isActive: boolean;                       // 是否启用
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+---
+
 ## 附录 B: 版本记录
 
 | 版本 | 日期 | 变更说明 |
 |------|------|----------|
 | v1.0 | 2026-07-04 | 初版定稿：涵盖 Task / Session / Stats / Diary / User / Coach 所有接口 |
+| v1.1 | 2026-07-06 | 新增 §7.3 coach/weekly-report、§7.4 coach/correlation、ai_prompts 集合 |
 
 ---

@@ -148,11 +148,15 @@ function initHeatmapChart(canvas, width, height, dpr) {
 // ===== 工具函数 =====
 
 /**
- * 从 API 标准响应 { code, data, message } 中提取 data
+ * 从 API 标准响应 { code, data, message } 中提取 data。
+ * 非 0 code 返回 fallback，不 throw，确保单接口失败不会丢弃其他已成功的并行结果。
  */
-function extractData(res) {
-  if (!res) return null;
-  if (res.code !== undefined && 'data' in res) return res.data;
+function extractData(res, fallback) {
+  if (!res) return fallback;
+  if (res.code !== undefined) {
+    if (res.code !== 0) return fallback;
+    return 'data' in res ? res.data : fallback;
+  }
   return res;
 }
 
@@ -226,15 +230,23 @@ Page({
         statsAPI.heatmap(now.getFullYear(), now.getMonth() + 1),
       ]);
 
-      const today = extractData(todayRes);
-      const weekly = extractData(weeklyRes);
-      const monthly = extractData(monthlyRes);
-      const heatmap = extractData(heatmapRes);
+      const today = extractData(todayRes, {});
+      const weekly = extractData(weeklyRes, {});
+      const monthly = extractData(monthlyRes, {});
+      const heatmap = extractData(heatmapRes, []);
+      const didFail = todayRes.code !== 0 || weeklyRes.code !== 0 ||
+                      monthlyRes.code !== 0 || heatmapRes.code !== 0;
 
-      this.data.todayStats = today;
-      this.data.weeklyStats = weekly;
-      this.data.monthlyStats = monthly;
-      this.data.heatmapData = heatmap || [];
+      this.setData({
+        todayStats: today || {},
+        weeklyStats: weekly || {},
+        monthlyStats: monthly || {},
+        heatmapData: Array.isArray(heatmap) ? heatmap : [],
+      });
+
+      if (didFail) {
+        wx.showToast({ title: '部分统计数据加载失败', icon: 'none' });
+      }
 
       // 更新所有视图
       this._updateSummaryCards();
@@ -252,8 +264,8 @@ Page({
 
   /** 更新摘要卡片 */
   _updateSummaryCards() {
-    const { todayStats, monthlyStats } = this.data;
-    if (!todayStats) return;
+    const todayStats = this.data.todayStats || {};
+    const monthlyStats = this.data.monthlyStats || {};
 
     const focusMinutes = todayStats.focusMinutes || 0;
     const pomodoroCount = todayStats.pomodoroCount || 0;
@@ -268,25 +280,9 @@ Page({
     this.setData({ summaryCards });
   },
 
-  /** 更新折线图（使用 weekly.dailyBreakdown） */
+  /** 更新折线图（P0 仅支持 weekly.dailyBreakdown；日/月明细暂为空） */
   _updateTrendChart() {
-    const { weeklyStats } = this.data;
-    if (!weeklyStats || !Array.isArray(weeklyStats.dailyBreakdown) || !weeklyStats.dailyBreakdown.length) return;
-
-    const data = weeklyStats.dailyBreakdown.map(d => ({
-      label: (d.date || '').slice(-2) + '日',
-      value: d.focusMinutes || 0,
-    }));
-
-    this.setData({ trendTitle: '本周专注趋势' });
-
-    const ecComp = this.selectComponent('#trendChart');
-    if (ecComp && ecComp.chart) {
-      ecComp.chart.setOption({
-        xAxis: { data: data.map(d => d.label) },
-        series: [{ data: data.map(d => d.value) }],
-      });
-    }
+    this._refreshTrendChart(this.data.period);
   },
 
   /** 更新环形图 */
@@ -363,9 +359,9 @@ Page({
         const w = Math.floor(diffDays / 7);
         const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon...
         const d = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0=Mon, 6=Sun
-        const count = item.count != null ? item.count : (item.value != null ? item.value : 1);
+        const focusMinutes = item.focusMinutes || 0;
 
-        return [w, d, count];
+        return [w, d, focusMinutes];
       })
       .filter(Boolean);
 
@@ -379,11 +375,10 @@ Page({
 
   /** 更新评分卡片 */
   _updateScoreCard() {
-    const { todayStats } = this.data;
-    if (!todayStats) return;
-
-    const score = todayStats.score || 0;
-    const insight = todayStats.insight || '暂无数据';
+    const todayStats = this.data.todayStats || {};
+    const hasScore = todayStats.aiScore != null;
+    const score = hasScore ? todayStats.aiScore : 0;
+    const insight = hasScore ? '今日专注表现已生成' : '完成一次专注后生成分析';
 
     let emoji = '📊';
     if (score >= 90) emoji = '🎯';
@@ -405,41 +400,23 @@ Page({
 
   _refreshTrendChart(period) {
     const { weeklyStats } = this.data;
-    let data;
+    let data = [];
     let title;
 
     if (period === 'day') {
       title = '今日专注趋势';
-      data = [
-        { label: '6时', value: 0 }, { label: '8时', value: 2 },
-        { label: '10时', value: 3 }, { label: '12时', value: 1 },
-        { label: '14时', value: 4 }, { label: '16时', value: 3 },
-        { label: '18时', value: 2 }, { label: '20时', value: 1 },
-      ];
+      // P0 后端暂不提供日内明细，保持空图表而不展示伪造趋势。
     } else if (period === 'week') {
       title = '本周专注趋势';
-      // 优先用真实数据
-      if (weeklyStats && Array.isArray(weeklyStats.dailyBreakdown) && weeklyStats.dailyBreakdown.length) {
+      if (weeklyStats && Array.isArray(weeklyStats.dailyBreakdown)) {
         data = weeklyStats.dailyBreakdown.map(d => ({
           label: (d.date || '').slice(-2) + '日',
           value: d.focusMinutes || 0,
         }));
-      } else {
-        data = [
-          { label: '周一', value: 6 }, { label: '周二', value: 8 },
-          { label: '周三', value: 5 }, { label: '周四', value: 9 },
-          { label: '周五', value: 7 }, { label: '周六', value: 4 },
-          { label: '周日', value: 3 },
-        ];
       }
     } else {
       title = '本月专注趋势';
-      data = [
-        { label: '1日', value: 4 }, { label: '5日', value: 6 },
-        { label: '10日', value: 5 }, { label: '15日', value: 8 },
-        { label: '20日', value: 7 }, { label: '25日', value: 5 },
-        { label: '30日', value: 6 },
-      ];
+      // P0 后端暂不提供月内趋势明细，保持空图表而不展示伪造趋势。
     }
 
     this.setData({ trendTitle: title });

@@ -1,157 +1,189 @@
-# Frontend Integration v2 — 前端真实 API 闭环对接规划
+# Frontend Integration v2 — 前端真实 API 闭环救援规划
 
-> 状态: 🔲 待执行  
-> 角色: 项目经理 / 架构师规划文档  
-> 执行对象: 无上下文 Claude Code 窗口  
-> 旧版: `docs/archive/specs/superseded/05-frontend-v1.md` 已废弃，原因是只做到“调用 API”，没有完成产品闭环。
+> 状态: 🚧 MVP 救援执行中
+> 角色: PM / Tech Lead 总控文档
+> 契约来源: [`../api-contracts.md`](../../api-contracts.md)
+> 总执行计划: [`../mvp-rescue-plan.md`](../mvp-rescue-plan.md)
 
 ---
 
-## 0. 为什么要做 v2
+## 0. 当前判断
 
-当前页面存在的问题：
+当前分支不是“未开始”，而是“集成草稿接近完成但契约漂移”。因此 v2 不再按绿地顺序从 01 到 06 全部重写，而是按质量救援优先级执行。
 
-1. **登录页仍然接近 mock 流程**：只是固定传 `微信用户`，没有获取用户资料，也没有统一登录态守卫。
-2. **focus-api 未被完整使用**：统计页未调用 `stats/*`，专注页没有真正联动 Task 选择与 Session 写入。
-3. **页面之间没有数据刷新协议**：Todo 创建/完成后，Focus/Stats/Diary 不知道数据变化。
-4. **API 调用没有统一兜底**：401、网络失败、加载态、空状态各页面自己散写。
+已基本完成：
 
-v2 的目标不是“看起来连上接口”，而是让 MVP 形成真实闭环：
+- API foundation：`request.js` / `auth.js` / `mappers.js` / `stats.api.js` 已存在。
+- Login/Profile：已接 `userAPI` 和本地登录态。
+- Todo：已接 `taskAPI` CRUD。
+- Focus：已接真实 task 选择和 `session/complete`。
 
-```
+主要阻塞：
+
+- Diary 契约漂移：前端旧字段 `title/mood/tags/entries` vs 后端 canonical `content/emotionTags/tasks/diaries`。
+- Stats 假数据残留：趋势图仍有 hardcoded arrays；heatmap/score 字段不匹配。
+- 导航文档漂移：当前 `app.json` 是原生 tabBar，但旧文档仍描述 custom tab + `redirectTo`。
+- Coach 仍是 mock/TODO，不计入 P0。
+
+---
+
+## 1. P0 闭环目标
+
+```text
 登录 → 获取用户身份
   ↓
 创建待办 → 云数据库持久化
   ↓
 选择任务开始专注 → 完成 session → 更新 daily_summaries + task 进度
   ↓
-统计页读取真实统计
+统计页读取真实统计或诚实空态
   ↓
-日记页读取真实日记，并展示今日完成任务摘要
+日记页保存/读取真实日记，并展示今日完成任务摘要
   ↓
 我的页读取用户信息/设置
 ```
 
----
+P0 模块：
 
-## 1. 当前后端能力
+| 模块 | P0 状态目标 |
+|---|---|
+| Login/User | 真实登录态、真实用户信息 |
+| Todo | 真实 CRUD |
+| Focus/Session | 真实任务选择 + session 写入 |
+| Stats | 真实 today/weekly/monthly/heatmap；无 fake trend |
+| Diary | 真实 create/list；情绪写入 `emotionTags` |
+| Profile | 真实 user info/settings |
 
-已有 API 封装：
+P1 模块：
 
-```
-miniprogram/api/
-├── request.js       # callAPI(url, data)
-├── task.api.js      # create/list/update/delete
-├── session.api.js   # complete/list
-├── diary.api.js     # create/list/get/update/delete
-└── user.api.js      # login/getInfo/getSettings/updateSettings
-```
-
-已有后端路由：
-
-```
-focus-api:
-├── user/login, user/info, user/settings/get, user/settings/update
-├── task/create, task/list, task/update, task/delete
-├── session/complete, session/list
-├── stats/today, stats/weekly, stats/monthly, stats/heatmap
-└── diary/create, diary/list, diary/get, diary/update, diary/delete
-```
+| 模块 | 说明 |
+|---|---|
+| Coach | 后端路由当前 TODO，前端 mock；不计入 P0 done |
+| 图片/语音日记 | P0 保留 toast/占位，不做真实能力 |
+| 小时级趋势 | 后端未提供，不在 P0 fake |
+| 月内每日趋势 | 后端未提供时不在 P0 fake |
 
 ---
 
-## 2. 执行顺序（非常重要）
+## 2. 当前架构约束
 
-不能一次性让多个窗口同时改页面。正确顺序：
+### 2.1 API 调用
 
-### 第 1 轮：基础设施（必须先做，单窗口）
-
-| 顺序 | Spec | 内容 | 是否可并行 |
-|------|------|------|-----------|
-| 1 | `01-api-foundation.md` | 完善 API 封装、登录态工具、数据映射工具 | ❌ 必须先做 |
-
-### 第 2 轮：独立页面对接（可并行）
-
-| 顺序 | Spec | 内容 | 依赖 |
-|------|------|------|------|
-| 2A | `02-login-profile.md` | 登录页 + 我的页真实用户信息/设置 | 01 |
-| 2B | `03-todo.md` | Todo 页真实 CRUD + 本地页面格式映射 | 01 |
-
-这两个可以并行，因为一个改 `login/profile`，一个改 `todo`。
-
-### 第 3 轮：业务闭环（串行）
-
-| 顺序 | Spec | 内容 | 依赖 |
-|------|------|------|------|
-| 3 | `04-focus-session.md` | Focus 页选择任务 + 完成 session + 更新统计 | 02-login-profile + 03-todo |
-
-必须等 Todo 完成，因为 Focus 需要选择真实 Task。
-
-### 第 4 轮：展示层（可并行）
-
-| 顺序 | Spec | 内容 | 依赖 |
-|------|------|------|------|
-| 4A | `05-stats.md` | Stats 页读取 stats/today weekly monthly heatmap | 04 |
-| 4B | `06-diary.md` | Diary 页真实日记 + 今日任务摘要 | 03-todo + 04 |
-
-Stats 和 Diary 可并行，因为都只读数据。
-
----
-
-## 3. 并行执行图
+页面必须通过 `miniprogram/api/*.api.js` 调用云函数：
 
 ```text
-01-api-foundation
-        │
-        ├──────────────┬──────────────┐
-        ▼              ▼              │
-02-login-profile   03-todo            │
-        │              │              │
-        └──────┬───────┘              │
-               ▼                      │
-        04-focus-session               │
-               │                      │
-        ┌──────┴───────┐              │
-        ▼              ▼              │
-   05-stats       06-diary             │
+miniprogram/api/
+├── request.js       # callAPI(url, data, options)
+├── auth.js          # 登录态读写
+├── mappers.js       # 后端字段 → 页面字段
+├── task.api.js      # task/create/list/update/delete
+├── session.api.js   # session/complete/list
+├── stats.api.js     # stats/today/weekly/monthly/heatmap
+├── diary.api.js     # diary/create/list/update/delete
+└── user.api.js      # user/login/info/settings
 ```
 
+禁止页面直接散落 `wx.cloud.callFunction({ name: 'focus-api' })`。
+
+### 2.2 字段转换
+
+后端字段到页面字段必须集中在 `miniprogram/api/mappers.js`。
+
+重点 mapper：
+
+- `mapTaskToView(task)`：`_id/title/isDone/...` → `id/text/done/...`
+- `mapDiaryToView(entry)`：`createdAt/emotionTags/content` → `date/emotion/preview/title`
+- `formatDuration(minutes)`：统计时间展示
+
+### 2.3 导航
+
+当前采用 `app.json` 原生 tabBar：
+
+```text
+pages/focus/focus
+pages/todo/todo
+pages/stats/stats
+pages/diary/diary
+pages/profile/profile
+```
+
+规则：
+
+- tab 页之间使用 `wx.switchTab`。
+- 非 tab 页使用 `wx.navigateTo` 或 `wx.redirectTo`。
+- 页面内 custom bottom tab 若与原生 tabBar 重复，应移除/隐藏或明确降级。
+
 ---
 
-## 4. 全局约束
+## 3. 当前执行顺序
 
-所有执行窗口必须遵守：
+### 阶段 1：契约冻结（单 worktree）
 
-- 工作目录：`F:\Design WeChat Mini Program`
-- 只修改 spec 指定文件，不要顺手重构其他文件。
-- 不修改 `cloudfunctions/` 后端文件。
-- 不修改 `app.json` 页面列表，除非 spec 明确要求。
-- 不修改 `*.wxml` / `*.wxss`，除非 spec 明确要求。
-- 不删除 mock 常量，除非该 spec 明确要求删除。
-- 所有 API 调用必须处理：loading、失败 toast、401 登录失效。
-- 页面数据结构必须通过 mapper 转换，禁止把后端字段直接散落在 WXML 绑定里。
+| Worktree | 内容 | 文件 |
+|---|---|---|
+| `mvp-contract-docs` | 统一 API contract、修正 specs、明确 P0/P1 | `docs/api-contracts.md`, `docs/dev-specs/**` |
+
+### 阶段 2：基础适配（单 worktree，尽快合并）
+
+| Worktree | 内容 | 文件 |
+|---|---|---|
+| `mvp-api-baseline` | 修正 diary API wrapper 和 mapper | `miniprogram/api/diary.api.js`, `miniprogram/api/mappers.js` |
+
+### 阶段 3：页面修复（可并行）
+
+| Worktree | 内容 | 依赖 |
+|---|---|---|
+| `mvp-diary-quality` | Diary 真实 create/list/情绪 | contract + api baseline |
+| `mvp-stats-quality` | Stats 去 fake trend、字段对齐 | contract |
+| `mvp-navigation-focus` | 原生 tabBar、Focus 失败态 polish | contract |
+| `mvp-login-profile-polish` | 登录/我的失败态 hardening | contract |
+
+### 阶段 4：集成验收（串行）
+
+| Worktree | 内容 |
+|---|---|
+| `mvp-final-qa` | 合并、冲突处理、WeChat DevTools smoke test |
 
 ---
 
-## 5. 完成标准
+## 4. Spec 文件状态
 
-v2 完成后：
+| 文件 | 当前用途 | 状态 |
+|---|---|---|
+| `01-api-foundation.md` | API 基础设施 | ✅ 基本完成，按需 hardening |
+| `02-login-profile.md` | 登录/Profile | ✅ 已升级：`wx.login` 鉴权 + Profile 主动采集头像昵称 |
+| `03-todo.md` | Todo CRUD | ✅ 线上版本完成，🚧 第二轮修复 FAB UX |
+| `04-focus-session.md` | Focus + Session | ✅ 已完成 |
+| `05-stats.md` | Stats 真实化 | ✅ 已完成 |
+| `06-diary.md` | Diary 真实化 | ✅ 已完成 |
+| `07-login-fix.md` | Login 基础库 3.7.12 适配 | 🚧 新增，待执行 |
+| `08-todo-ux-fix.md` | Todo FAB 功能修复 | 🚧 新增，待执行 |
+| `09-coach-p0.md` | Coach P0 实现 | 🚧 新增，待执行 |
 
-- 登录页使用真实用户资料或明确降级为匿名微信用户；登录成功写入本地登录态。
-- Todo 页刷新不丢数据，增删改查全走云数据库。
-- Focus 页可以从真实任务中选择当前任务，并完成 session 写入。
-- Stats 页展示真实 `daily_summaries` 数据。
-- Diary 页保存/读取真实日记，并展示今日专注任务摘要。
-- Profile 页展示真实用户信息和设置。
+---
+
+## 5. 全局验收清单
+
+- [ ] API contract 与 route/service 实现一致。
+- [ ] Diary 不再以 `entries` 为主字段。
+- [ ] Diary 创建发送 `content/emotionTags/tasks`。
+- [ ] Stats trend 不使用 hardcoded arrays 冒充真实数据。
+- [ ] Heatmap 主字段为 `focusMinutes`。
+- [ ] Score 主字段为 `aiScore` 或空态。
+- [ ] 原生 tabBar 导航一致，无双 tab。
+- [ ] API 失败路径有 toast 或明确状态。
+- [ ] WeChat DevTools 编译通过。
+- [ ] 主链路 smoke test 通过。
 
 ---
 
 ## 6. Review 策略
 
-每个窗口完成后，由主窗口执行：
+每个 worktree 完成后检查：
 
-1. `git diff -- <spec指定文件>` 检查是否越界改文件。
-2. grep 页面中是否还存在应删除的 mock 常量。
-3. 检查 API import 路径是否统一。
-4. 检查失败路径是否 toast，不允许静默吞错。
-5. 确认页面字段映射集中在 mapper 函数中。
+1. 是否只修改该 worktree 文件范围。
+2. 是否符合 `docs/api-contracts.md`。
+3. 是否新增 fake real-data mock。
+4. 是否把字段转换集中在 `mappers.js`。
+5. 是否破坏原生 tabBar 导航。
+6. 是否有用户可见失败反馈。
