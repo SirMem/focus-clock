@@ -72,7 +72,6 @@ Page({
     errorText: '',
     showTaskModal: false,
     taskForm: createEmptyForm(),
-    sheetScrollHeight: 0,
   },
 
   onLoad() {
@@ -171,26 +170,7 @@ Page({
 
   // ─── 完整任务弹窗 ───
 
-  /**
-   * 计算 scroll-view 的 px 高度。
-   *
-   * 微信 scroll-view 不支持 flex:1 自动分配高度——必须显式 px。
-   * 这里用 88vh 弹窗高度减去 chrome（handle + header + actions）得到可滚动区域。
-   */
-  _calcSheetHeight() {
-    const sys = wx.getWindowInfo();
-    const screenHeight = sys.windowHeight;
-    const screenWidth = sys.windowWidth || 375;
-    const maxSheetHeight = screenHeight * 0.88;
-    // chrome: handle(8+margin≈36) + header(~80) + actions(~142) + padding ≈ 258rpx
-    const chromeRpx = 258;
-    const chromePx = (chromeRpx / 750) * screenWidth;
-    const scrollHeight = Math.max(200, maxSheetHeight - chromePx);
-    this.setData({ sheetScrollHeight: Math.floor(scrollHeight) });
-  },
-
   onFabTap() {
-    this._calcSheetHeight();
     this.setData({
       showTaskModal: true,
       taskForm: createEmptyForm(),

@@ -26,8 +26,10 @@
           placeholder="快速添加任务..."
           placeholder-style="color:#C0C4CC;font-size:14px"
           value="{{input}}"
+          focus="{{inputFocus}}"
           bindinput="onInputChange"
           bindconfirm="onAddTask"
+          bindblur="onInputBlur"
           confirm-type="done"
         />
         <view
@@ -53,7 +55,7 @@
     </view>
 
     <!-- ===== 任务列表（滚动区域） ===== -->
-    <scroll-view class="task-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <scroll-view class="task-scroll" scroll-y enhanced show-scrollbar="{{false}}" scroll-top="{{scrollTop}}">
 
       <!-- 空状态 -->
       <view wx:if="{{filteredTasks.length === 0}}" class="empty-state">
@@ -151,13 +153,7 @@
         </view>
       </view>
 
-      <scroll-view
-        class="sheet-scroll"
-        style="height: {{sheetScrollHeight}}px;"
-        scroll-y
-        enhanced
-        show-scrollbar="{{false}}"
-      >
+      <scroll-view class="sheet-scroll" scroll-y enhanced show-scrollbar="{{false}}">
         <view class="form-section">
           <text class="form-label">任务标题</text>
           <input

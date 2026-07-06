@@ -208,22 +208,20 @@ type TaskV2 = {
 
 ## 9. 微信 scroll-view 约束
 
-**问题：** 微信小程序的 `<scroll-view>` 不支持 CSS `flex: 1` / `min-height: 0` 自动分配高度。当 scroll-view 位于 flex column 弹窗中时，浏览器能正常工作，但真机上 scroll-view 会撑开到内容高度 → 无法滚动 → 底部按钮被推出可视区。
+**问题：** 微信小程序的 `<scroll-view>` 在 flex column 容器中，`min-height: 0` 无法像浏览器一样让 flex 正确收缩——scroll-view 会撑开到内容高度 → 不滚动 → 底部按钮被推出可视区。
 
-**解决方案：** JS 动态计算 scroll-view 的 px 高度：
+**根因：** wechat scroll-view 的 flex basis 默认取自内容高度（类似 `flex-basis: auto`），`min-height: 0` 只允许收缩到 0，但不改变 flex basis。需要显式设置 `height: 0` 将 basis 重置为 0，flex 才能正确分配剩余空间。
 
+**解决方案：**
+
+```css
+/* ❌ 错误：WeChat 不认 */
+.sheet-scroll { flex: 1; min-height: 0; }
+
+/* ✅ 正确：height: 0 强制 basis 从零开始 */
+.sheet-scroll { flex: 1; height: 0; }
 ```
-scrollHeight = screenHeight × 0.88   (弹窗 max-height)
-             − chrome                 (handle + header + actions 的 px 值)
-```
 
-- 在 `onFabTap()` 中调用 `_calcSheetHeight()`，通过 `wx.getWindowInfo()` 获取屏幕尺寸
-- 计算结果写入 `data.sheetScrollHeight`
-- WXML 中通过 `style="height: {{sheetScrollHeight}}px;"` 注入
+同时父容器必须在 flex 方向上有一个确定的高度约束（如 `max-height: 88vh`），并去掉 `overflow: hidden`，避免底部操作栏被裁切。
 
-**影响范围：** 所有使用 `scroll-view` 的底部半屏弹窗。将来如果有其他弹窗复用此模式，需要同样处理。
-
-**相关代码：**
-- `pages/todo/todo.js` → `_calcSheetHeight()`
-- `pages/todo/todo.wxml` → `style="height: {{sheetScrollHeight}}px;"`
-- `pages/todo/todo.wxss` → `.sheet-scroll` 禁止使用 `flex: 1` / `min-height: 0`
+**影响范围：** 所有使用 `scroll-view` 的 flex 弹窗。将来新增弹窗时，scroll-view 一律用 `flex: 1; height: 0` 模式。
