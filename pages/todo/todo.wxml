@@ -151,7 +151,13 @@
         </view>
       </view>
 
-      <scroll-view class="sheet-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <scroll-view
+        class="sheet-scroll"
+        style="height: {{sheetScrollHeight}}px;"
+        scroll-y
+        enhanced
+        show-scrollbar="{{false}}"
+      >
         <view class="form-section">
           <text class="form-label">任务标题</text>
           <input
@@ -167,7 +173,6 @@
           <text class="form-label">任务说明</text>
           <textarea
             class="form-textarea"
-            placeholder="可选：补充任务背景、范围或要求"
             value="{{taskForm.description}}"
             maxlength="500"
             auto-height="{{false}}"
@@ -213,7 +218,6 @@
             <view wx:for="{{taskForm.subtasks}}" wx:key="id" class="subtask-row">
               <input
                 class="subtask-input"
-                placeholder="输入一个步骤"
                 value="{{item.title}}"
                 data-index="{{index}}"
                 bindinput="onSubtaskInput"

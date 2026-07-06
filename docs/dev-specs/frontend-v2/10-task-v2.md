@@ -197,3 +197,33 @@ type TaskV2 = {
 - `task/update` 更新 Task v2 白名单字段；
 - 非法 priority、estimatedPomodoros、repeat.type、subtasks 返回 400；
 - 旧数据经 normalize 后返回默认字段。
+
+### 编解码一致性
+
+前后端字段名对齐：
+- API 契约字段 (snake_case) → 前端 mapper 转为 view 字段 (camelCase)
+- mapper 层做防御：所有字段都有 fallback 默认值
+
+---
+
+## 9. 微信 scroll-view 约束
+
+**问题：** 微信小程序的 `<scroll-view>` 不支持 CSS `flex: 1` / `min-height: 0` 自动分配高度。当 scroll-view 位于 flex column 弹窗中时，浏览器能正常工作，但真机上 scroll-view 会撑开到内容高度 → 无法滚动 → 底部按钮被推出可视区。
+
+**解决方案：** JS 动态计算 scroll-view 的 px 高度：
+
+```
+scrollHeight = screenHeight × 0.88   (弹窗 max-height)
+             − chrome                 (handle + header + actions 的 px 值)
+```
+
+- 在 `onFabTap()` 中调用 `_calcSheetHeight()`，通过 `wx.getWindowInfo()` 获取屏幕尺寸
+- 计算结果写入 `data.sheetScrollHeight`
+- WXML 中通过 `style="height: {{sheetScrollHeight}}px;"` 注入
+
+**影响范围：** 所有使用 `scroll-view` 的底部半屏弹窗。将来如果有其他弹窗复用此模式，需要同样处理。
+
+**相关代码：**
+- `pages/todo/todo.js` → `_calcSheetHeight()`
+- `pages/todo/todo.wxml` → `style="height: {{sheetScrollHeight}}px;"`
+- `pages/todo/todo.wxss` → `.sheet-scroll` 禁止使用 `flex: 1` / `min-height: 0`
