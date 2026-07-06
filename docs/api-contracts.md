@@ -65,6 +65,61 @@ const res = await wx.cloud.callFunction({
 
 ## 2. Task 待办模块
 
+> Task v2 标准详见 `docs/dev-specs/frontend-v2/10-task-v2.md`。本模块以“轻量任务规划器”为目标，支持 Quick Add 与完整任务弹窗两种创建路径。
+
+### 2.0 TaskV2 数据模型
+
+```typescript
+type TaskPriority = 'high' | 'medium' | 'low';
+type TaskRepeatType = 'none' | 'daily' | 'weekly' | 'weekdays';
+
+type TaskV2 = {
+  _id: string;
+  _openid: string;
+  title: string;                 // 1-100 字符
+  description: string;           // 默认 ''，最多 500 字
+  priority: TaskPriority;         // 默认 'medium'
+  isDone: boolean;                // 默认 false
+  completedPomodoros: number;     // 默认 0
+  estimatedPomodoros: number;     // 默认 1，范围 1-12
+  subtasks: Array<{
+    id: string;
+    title: string;               // 1-100 字符
+    completed: boolean;
+    createdAt: number;
+    updatedAt: number;
+  }>;
+  dueAt: number | null;           // ms 时间戳，未设置为 null
+  repeat: {
+    enabled: boolean;
+    type: TaskRepeatType;
+    interval: number;             // 默认 1
+  };
+  sortOrder: number;              // 用于排序的时间戳
+  createdAt: number;
+  updatedAt: number;
+  completedAt: number | null;
+};
+```
+
+#### 默认值
+
+```typescript
+{
+  description: '',
+  priority: 'medium',
+  isDone: false,
+  completedPomodoros: 0,
+  estimatedPomodoros: 1,
+  subtasks: [],
+  dueAt: null,
+  repeat: { enabled: false, type: 'none', interval: 1 },
+  completedAt: null
+}
+```
+
+---
+
 ### 2.1 task/create — 创建任务
 
 **路由**: `task/create`
@@ -74,9 +129,20 @@ const res = await wx.cloud.callFunction({
 
 ```typescript
 {
-  title: string;                 // 必填，1-100 字符
-  priority?: 'high' | 'medium' | 'low';  // 默认 'medium'
-  estimatedPomodoros?: number;   // 预估番茄数，默认 1，范围 1-99
+  title: string;                  // 必填，1-100 字符
+  description?: string;           // 可选，最多 500 字
+  priority?: TaskPriority;        // 默认 'medium'
+  estimatedPomodoros?: number;    // 默认 1，范围 1-12
+  subtasks?: Array<{
+    title: string;                // 1-100 字符
+    completed?: boolean;          // 默认 false
+  }>;
+  dueAt?: number | null;          // ms 时间戳或 null
+  repeat?: {
+    enabled?: boolean;
+    type?: TaskRepeatType;        // 默认 'none'
+    interval?: number;            // 默认 1，范围 1-365
+  };
 }
 ```
 
@@ -85,18 +151,7 @@ const res = await wx.cloud.callFunction({
 ```typescript
 {
   code: 0,
-  data: {
-    _id: string;
-    _openid: string;
-    title: string;
-    priority: 'high' | 'medium' | 'low';
-    isDone: boolean;              // 初始 false
-    completedPomodoros: number;   // 初始 0
-    estimatedPomodoros: number;
-    sortOrder: number;            // 用于排序的时间戳
-    createdAt: number;            // Date.now()
-    updatedAt: number;
-  }
+  data: TaskV2
 }
 ```
 
@@ -105,7 +160,11 @@ const res = await wx.cloud.callFunction({
 | code | 说明 |
 |------|------|
 | 400 | title 为空或超长 |
+| 400 | description 超过 500 字 |
 | 400 | priority 不在允许范围内 |
+| 400 | estimatedPomodoros 不在 1-12 范围 |
+| 400 | subtasks 超过 20 个或子任务标题非法 |
+| 400 | repeat.type 不在允许范围内 |
 
 ---
 
@@ -119,11 +178,11 @@ const res = await wx.cloud.callFunction({
 ```typescript
 {
   filter?: {
-    isDone?: boolean;         // 按完成状态筛选
-    priority?: string;        // 按优先级筛选
+    isDone?: boolean;             // 按完成状态筛选
+    priority?: TaskPriority;      // 按优先级筛选
   };
-  page?: number;              // 默认 1
-  pageSize?: number;          // 默认 20，最大 100
+  page?: number;                  // 默认 1
+  pageSize?: number;              // 默认 20，最大 100
 }
 ```
 
@@ -133,20 +192,9 @@ const res = await wx.cloud.callFunction({
 {
   code: 0,
   data: {
-    tasks: Array<{
-      _id: string;
-      _openid: string;
-      title: string;
-      priority: 'high' | 'medium' | 'low';
-      isDone: boolean;
-      completedPomodoros: number;
-      estimatedPomodoros: number;
-      sortOrder: number;
-      createdAt: number;
-      updatedAt: number;
-    }>;
-    total: number;              // 符合条件总数
-    hasMore: boolean;           // 是否有下一页
+    tasks: TaskV2[];              // 旧数据会补齐 Task v2 默认字段
+    total: number;                // 符合条件总数
+    hasMore: boolean;             // 是否有下一页
   }
 }
 ```
@@ -162,16 +210,39 @@ const res = await wx.cloud.callFunction({
 
 ```typescript
 {
-  id: string;                   // 任务 _id
-  data: {
-    title?: string;
-    priority?: 'high' | 'medium' | 'low';
-    isDone?: boolean;
-    estimatedPomodoros?: number;
-    sortOrder?: number;         // 拖拽排序时使用
-  };
+  id: string;                     // 任务 _id
+  data: Partial<{
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    isDone: boolean;
+    estimatedPomodoros: number;
+    completedPomodoros: number;
+    subtasks: Array<{
+      id?: string;
+      title: string;
+      completed?: boolean;
+      createdAt?: number;
+      updatedAt?: number;
+    }>;
+    dueAt: number | null;
+    repeat: {
+      enabled?: boolean;
+      type?: TaskRepeatType;
+      interval?: number;
+    };
+    sortOrder: number;
+  }>;
 }
 ```
+
+#### 行为
+
+- 只更新 `data` 中传入的白名单字段；
+- 禁止更新 `_id`、`_openid`、`createdAt`；
+- `subtasks` 第一版作为整体替换；
+- `isDone` 从 `false` 变 `true` 时写入 `completedAt`；
+- `isDone` 从 `true` 变 `false` 时清空 `completedAt`。
 
 #### 响应
 
@@ -179,7 +250,7 @@ const res = await wx.cloud.callFunction({
 {
   code: 0,
   data: {
-    updated: number;            // 更新的文档数（通常为 1）
+    updated: number;              // 更新的文档数（通常为 1）
   }
 }
 ```
@@ -188,6 +259,7 @@ const res = await wx.cloud.callFunction({
 
 | code | 说明 |
 |------|------|
+| 400 | data 不是对象或字段非法 |
 | 404 | 任务不存在 |
 | 403 | _openid 不匹配（无权限操作他人数据） |
 
