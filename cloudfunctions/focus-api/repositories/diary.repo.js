@@ -10,6 +10,7 @@
  */
 
 const COLLECTION_NAME = 'diaries';
+const { getDb } = require('../utils/cloud');
 
 class DiaryRepo {
   constructor(db) {
@@ -21,9 +22,7 @@ class DiaryRepo {
    * 工厂方法 —— 自动初始化云数据库环境
    */
   static create() {
-    const cloud = require('@cloudbase/node-sdk');
-    const app = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    return new DiaryRepo(app.database());
+    return new DiaryRepo(getDb());
   }
 
   /**
@@ -59,7 +58,7 @@ class DiaryRepo {
    */
   async findById(id) {
     const res = await this.collection.doc(id).get();
-    return res.data[0] || null;
+    return res.data || null;
   }
 
   /**
@@ -72,7 +71,7 @@ class DiaryRepo {
     const res = await this.collection.doc(id).update({
       data: { ...data, updatedAt: Date.now() },
     });
-    return { updated: res.updated };
+    return { updated: res.stats?.updated || 0 };
   }
 
   /**
@@ -82,7 +81,7 @@ class DiaryRepo {
    */
   async deleteById(id) {
     const res = await this.collection.doc(id).remove();
-    return { deleted: res.deleted || 0 };
+    return { deleted: res.stats?.removed || 0 };
   }
 
   /**

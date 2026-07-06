@@ -7,6 +7,8 @@
  * 契约: docs/api-contracts.md §3
  */
 
+const { getDb } = require('../utils/cloud');
+
 class SessionRepo {
 
   constructor(db) {
@@ -19,9 +21,7 @@ class SessionRepo {
    * @returns {SessionRepo}
    */
   static create() {
-    const cloud = require('@cloudbase/node-sdk');
-    const app = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    return new SessionRepo(app.database());
+    return new SessionRepo(getDb());
   }
 
   /**

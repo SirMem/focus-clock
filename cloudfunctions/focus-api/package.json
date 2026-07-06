@@ -4,7 +4,7 @@
   "description": "专注时钟微信小程序 - 主云函数（tcb-router 路由分发）",
   "main": "index.js",
   "dependencies": {
-    "@cloudbase/node-sdk": "^2.10.0",
-    "tcb-router": "^1.1.2"
+    "tcb-router": "^1.1.2",
+    "wx-server-sdk": "^4.0.2"
   }
 }

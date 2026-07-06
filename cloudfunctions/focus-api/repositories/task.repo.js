@@ -10,6 +10,7 @@
  */
 
 const COLLECTION_NAME = 'tasks';
+const { getDb } = require('../utils/cloud');
 
 class TaskRepo {
   constructor(db) {
@@ -20,9 +21,7 @@ class TaskRepo {
    * 工厂方法 —— 自动初始化云数据库环境
    */
   static create() {
-    const cloud = require('@cloudbase/node-sdk');
-    const app = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    return new TaskRepo(app.database());
+    return new TaskRepo(getDb());
   }
 
   /**
@@ -58,7 +57,7 @@ class TaskRepo {
    */
   async findById(id) {
     const res = await this.collection.doc(id).get();
-    return res.data[0] || null;
+    return res.data || null;
   }
 
   /**
@@ -71,7 +70,7 @@ class TaskRepo {
     const res = await this.collection.doc(id).update({
       data: { ...data, updatedAt: Date.now() },
     });
-    return { updated: res.updated };
+    return { updated: res.stats?.updated || 0 };
   }
 
   /**
@@ -81,7 +80,7 @@ class TaskRepo {
    */
   async deleteById(id) {
     const res = await this.collection.doc(id).remove();
-    return { deleted: res.deleted || 0 };
+    return { deleted: res.stats?.removed || 0 };
   }
 
   /**

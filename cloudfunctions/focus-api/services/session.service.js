@@ -16,6 +16,7 @@
 
 const SessionRepo = require('../repositories/session.repo');
 const DailySummaryRepo = require('../repositories/daily-summary.repo');
+const { getDb } = require('../utils/cloud');
 const { getDateStr } = require('../utils/helpers');
 
 class SessionService {
@@ -132,9 +133,7 @@ class SessionService {
    * @private
    */
   async _incrementTaskPomodoros(taskId, openId) {
-    const cloud = require('@cloudbase/node-sdk');
-    const app = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    const db = app.database();
+    const db = getDb();
     const _ = db.command;
 
     const taskRes = await db.collection('tasks').where({

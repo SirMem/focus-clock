@@ -50,13 +50,13 @@ const res = await wx.cloud.callFunction({
 | 参数 | 位置 | 说明 |
 |------|------|------|
 | `$url` | data | tcb-router 路由标识，格式 `module/action` |
-| `OPENID` | data.userInfo | 由微信云函数自动注入，中间件提取到 `ctx.OPENID` |
+| `OPENID` | 云函数上下文 | 服务端通过 `wx-server-sdk` 的 `cloud.getWXContext().OPENID` 获取，并由鉴权中间件注入到 `ctx.OPENID`；前端不得传 openid |
 
 ### 1.4 数据库约定
 
 | 字段 | 说明 |
 |------|------|
-| `_id` | 自动生成的文档 ID（string） |
+| `_id` | 文档 ID（string）；`users` 集合固定使用 OPENID 作为 `_id`，业务数据集合仍可自动生成 |
 | `_openid` | 微信用户标识，用于数据隔离 |
 | `createdAt` | 创建时间戳（number, ms） |
 | `updatedAt` | 更新时间戳（number, ms） |
@@ -593,7 +593,52 @@ const res = await wx.cloud.callFunction({
 
 ## 6. User 用户模块
 
-### 6.1 user/info — 获取用户信息
+用户模块采用静默身份登录：前端不传 openid，服务端通过 `wx-server-sdk` 的
+`cloud.getWXContext().OPENID` 获取可信身份，并将用户文档固定存储为
+`users/{OPENID}`。首次登录默认 `nickName` 为 `微信用户`，头像昵称后续通过
+`button[open-type=chooseAvatar]` 与 `input[type=nickname]` 主动完善。
+
+### 6.1 user/login — 静默登录/注册
+
+**路由**: `user/login`
+**方法**: POST
+
+#### 请求
+
+```typescript
+{
+  code?: string; // 兼容旧前端，可传但服务端不依赖；身份以 cloud.getWXContext().OPENID 为准
+}
+```
+
+#### 响应
+
+```typescript
+{
+  code: 0,
+  data: {
+    openid: string;
+    user: {
+      _id: string;        // 固定等于 OPENID
+      openid: string;
+      nickName: string;   // 首次默认为“微信用户”
+      avatarUrl: string;
+      createdAt: number;
+      updatedAt: number;
+    };
+  };
+}
+```
+
+#### 错误码
+
+| code | 说明 |
+|------|------|
+| 401 | 云函数上下文无法获取 OPENID |
+
+---
+
+### 6.2 user/info — 获取用户信息
 
 **路由**: `user/info`
 **方法**: GET
@@ -601,7 +646,7 @@ const res = await wx.cloud.callFunction({
 #### 请求
 
 ```typescript
-{} // 无参数，通过中间件提取 OPENID
+{} // 无参数，通过鉴权中间件注入 ctx.OPENID
 ```
 
 #### 响应
@@ -610,34 +655,80 @@ const res = await wx.cloud.callFunction({
 {
   code: 0,
   data: {
-    user: {
-      _id: string;
-      _openid: string;
-      nickName?: string;
-      avatarUrl?: string;
-      createdAt: number;
-    };
-    settings: {
-      sound: string;              // 默认 'none'
-      focusDuration: number;      // 默认 25 * 60（秒）
-      shortBreakDuration: number; // 默认 5 * 60
-      longBreakDuration: number;  // 默认 15 * 60
-      dailyGoal: number;          // 每日目标番茄数，默认 8
-    };
-    stats: {
-      totalPomodoros: number;     // 累计番茄数
-      currentStreak: number;      // 当前连续天数
-      longestStreak: number;      // 最长连续天数
-    };
-  }
+    _id: string;
+    openid: string;
+    nickName: string;
+    avatarUrl: string;
+    createdAt: number;
+    updatedAt: number;
+  };
 }
 ```
 
 ---
 
-### 6.2 user/update — 更新用户设置
+### 6.3 user/profile/update — 更新头像昵称
 
-**路由**: `user/update`
+**路由**: `user/profile/update`
+**方法**: POST
+
+#### 请求
+
+```typescript
+{
+  nickName?: string;  // type="nickname" 主动输入/选择，服务端 trim 后最长 20 字符
+  avatarUrl?: string; // chooseAvatar 上传云存储后的 cloud:// 或 https:// 地址，最长 500 字符
+}
+```
+
+#### 响应
+
+```typescript
+{
+  code: 0,
+  data: {
+    _id: string;
+    openid: string;
+    nickName: string;
+    avatarUrl: string;
+    createdAt: number;
+    updatedAt: number;
+  };
+}
+```
+
+---
+
+### 6.4 user/settings/get — 获取用户设置
+
+**路由**: `user/settings/get`
+**方法**: GET
+
+#### 请求
+
+```typescript
+{} // 无参数
+```
+
+#### 响应
+
+```typescript
+{
+  code: 0,
+  data: {
+    focusDuration: number; // 默认 25（分钟）
+    shortBreak: number;    // 默认 5（分钟）
+    longBreak: number;     // 默认 15（分钟）
+    dailyGoal: number;     // 默认 4（番茄数）
+  };
+}
+```
+
+---
+
+### 6.5 user/settings/update — 更新用户设置
+
+**路由**: `user/settings/update`
 **方法**: POST
 
 #### 请求
@@ -645,15 +736,11 @@ const res = await wx.cloud.callFunction({
 ```typescript
 {
   settings: {
-    sound?: string;
     focusDuration?: number;
-    shortBreakDuration?: number;
-    longBreakDuration?: number;
+    shortBreak?: number;
+    longBreak?: number;
     dailyGoal?: number;
   };
-  // 也允许直接更新 user 字段
-  nickName?: string;
-  avatarUrl?: string;
 }
 ```
 
@@ -663,46 +750,11 @@ const res = await wx.cloud.callFunction({
 {
   code: 0,
   data: {
-    updated: number;
-  }
-}
-```
-
----
-
-### 6.3 user/login — 登录/注册
-
-**路由**: `user/login`
-**方法**: POST
-
-**说明**：登录时自动注册（if not exists），幂等。后续可替代现有的 `cloudfunctions/login/`。
-
-#### 请求
-
-```typescript
-{} // 无参数，OPENID 由云函数自动注入
-```
-
-#### 响应
-
-```typescript
-{
-  code: 0,
-  data: {
-    isNew: boolean;               // 是否新注册用户
-    user: {
-      _id: string;
-      _openid: string;
-      createdAt: number;
-    };
-    settings: {
-      sound: string;
-      focusDuration: number;
-      shortBreakDuration: number;
-      longBreakDuration: number;
-      dailyGoal: number;
-    };
-  }
+    focusDuration: number;
+    shortBreak: number;
+    longBreak: number;
+    dailyGoal: number;
+  };
 }
 ```
 

@@ -11,6 +11,8 @@
  * 契约: docs/api-contracts.md §3 · 附录 A daily_summaries
  */
 
+const { getDb } = require('../utils/cloud');
+
 class DailySummaryRepo {
 
   constructor(db) {
@@ -23,9 +25,7 @@ class DailySummaryRepo {
    * @returns {DailySummaryRepo}
    */
   static create() {
-    const cloud = require('@cloudbase/node-sdk');
-    const app = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    return new DailySummaryRepo(app.database());
+    return new DailySummaryRepo(getDb());
   }
 
   /**

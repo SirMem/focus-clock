@@ -18,7 +18,7 @@ Page({
     btnState: 'default',
     btnClass: '',
     btnDisabled: false,
-    btnText: '微信一键登录',
+    btnText: '微信登录',
     tomatoLogoSrc: TOMATO_LOGO,
     wechatLogoSrc: WECHAT_ICON,
     spinnerSrc: SPINNER
@@ -42,9 +42,9 @@ Page({
   // 更新按钮状态的统一方法
   _setBtnState(state) {
     const stateMap = {
-      default: { btnClass: '', btnDisabled: false, btnText: '微信一键登录' },
+      default: { btnClass: '', btnDisabled: false, btnText: '微信登录' },
       loading: { btnClass: 'btn-loading', btnDisabled: true, btnText: '登录中...' },
-      disabled: { btnClass: 'btn-disabled', btnDisabled: true, btnText: '微信一键登录' }
+      disabled: { btnClass: 'btn-disabled', btnDisabled: true, btnText: '微信登录' }
     }
     const update = stateMap[state] || stateMap.default
     this.setData({
@@ -55,54 +55,31 @@ Page({
     })
   },
 
-  // 获取用户资料（授权弹窗）
-  _getUserProfile() {
-    return new Promise((resolve) => {
-      wx.getUserProfile({
-        desc: '用于完善专注时钟用户资料',
-        success: (res) => {
-          const { nickName, avatarUrl } = res.userInfo;
-          resolve({ nickName, avatarUrl });
-        },
-        fail: () => {
-          resolve({ nickName: '微信用户', avatarUrl: '' });
-        },
-      });
-    });
-  },
-
   async handleLogin() {
     if (this.data.btnState !== 'default') return
     this._setBtnState('loading')
 
-    // 1. wx.login 获取临时 code
     wx.login({
       success: (res) => {
-        if (res.code) {
-          this._doCloudLogin()
-        } else {
-          wx.showToast({ title: '登录失败，请重试', icon: 'none' })
-          this._setBtnState('default')
+        if (!res.code) {
+          wx.showToast({ title: '获取登录凭证失败', icon: 'none' });
+          this._setBtnState('default');
+          return;
         }
+        this._doCloudLogin(res.code);
       },
-      fail: () => {
-        wx.showToast({ title: '网络异常，请检查', icon: 'none' })
-        this._setBtnState('default')
-      }
-    })
+      fail: (err) => {
+        console.warn('[login] wx.login failed:', err);
+        wx.showToast({ title: '微信登录失败，请重试', icon: 'none' });
+        this._setBtnState('default');
+      },
+    });
   },
 
-  async _doCloudLogin() {
+  async _doCloudLogin(code) {
     try {
-      // 1. 获取用户授权资料（失败则降级为默认昵称）
-      const profile = await this._getUserProfile();
-
-      if (!profile.avatarUrl) {
-        wx.showToast({ title: '已使用默认昵称登录', icon: 'none' });
-      }
-
-      // 2. 调用真实登录接口
-      const res = await userAPI.login(profile.nickName, profile.avatarUrl);
+      // wx.login 只做身份鉴权；头像昵称由 Profile 页通过 chooseAvatar + type=nickname 主动采集
+      const res = await userAPI.login(code);
       if (res.code !== 0 || !res.data || !res.data.openid) {
         console.warn('[login] unexpected response:', res);
         wx.showToast({ title: res && res.message ? res.message : '登录异常', icon: 'none' });
@@ -110,16 +87,18 @@ Page({
         return;
       }
 
-      const { openid, isNewUser, user } = res.data;
+      const { openid, user } = res.data;
 
-      // 3. 用 auth 工具保存登录态（不再直接操作 wx.setStorageSync）
+      // 保存登录态
       saveLoginState({ openid, user });
 
-      // 4. 更新全局数据
+      // 更新全局数据
       app.globalData.userInfo = user;
       app.globalData.isLoggedIn = true;
 
-      // 5. 跳转到专注页
+      wx.showToast({ title: '已使用微信身份登录', icon: 'none' });
+
+      // 跳转到专注页
       wx.switchTab({
         url: '/pages/focus/focus',
         fail: (navErr) => {

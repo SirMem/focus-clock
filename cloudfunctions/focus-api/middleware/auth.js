@@ -1,7 +1,7 @@
 /**
  * auth 中间件 —— OPENID 鉴权
  *
- * 从 event.userInfo 中提取 OPENID，注入到 ctx.OPENID。
+ * 从微信云函数调用上下文提取 OPENID，注入到 ctx.OPENID。
  * 如果没有 OPENID，直接短路返回 401。
  *
  * 注意：user/login 路由不需要鉴权（用户还没登录），在此放行。
@@ -12,6 +12,7 @@
  */
 
 const { CODES, MESSAGES } = require('../config');
+const { getOpenId } = require('../utils/cloud');
 
 // 不需要鉴权的路由（白名单）
 const NO_AUTH_ROUTES = ['user/login'];
@@ -30,13 +31,13 @@ module.exports = async (ctx, next) => {
     return;
   }
 
-  const { OPENID } = ctx.event.userInfo || {};
+  const openId = getOpenId();
 
-  if (!OPENID) {
+  if (!openId) {
     ctx.body = { code: CODES.ERR_UNAUTHORIZED, message: MESSAGES[CODES.ERR_UNAUTHORIZED] };
     return; // 不调用 next()，直接短路
   }
 
-  ctx.OPENID = OPENID;
+  ctx.OPENID = openId;
   await next();
 };

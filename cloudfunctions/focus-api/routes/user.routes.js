@@ -1,43 +1,59 @@
-/**
- * user.routes.js — 用户模块路由
- *
- * 路由: user/login, user/info, user/settings/get, user/settings/update
- * 契约: docs/dev-specs/04-user.md
- *
- * 注意：User 模块不需要 service 层，路由直接调用 repo。
- * 因为 user/login 和 settings 读写操作简单直接，不需要中间业务逻辑层。
- */
-
 const UserRepo = require('../repositories/user.repo');
 const { succ, fail } = require('../middleware/response');
-const { validate, V } = require('../middleware/validate');
-
-function getOpenId(ctx) {
-  const event = ctx.event || {};
-  const userInfo = event.userInfo || {};
-
-  try {
-    if (ctx.cloud && typeof ctx.cloud.auth === 'function') {
-      const authInfo = ctx.cloud.auth().getUserInfo();
-      return authInfo.openId || authInfo.OPENID || '';
-    }
-  } catch (err) {
-    console.warn('[user/login] getUserInfo failed:', err && err.message ? err.message : err);
-  }
-
-  if (userInfo.OPENID) return userInfo.OPENID;
-  if (userInfo.openId) return userInfo.openId;
-
-  return '';
-}
+const { getOpenId } = require('../utils/cloud');
 
 function logOpenIdMissing(ctx) {
   const event = ctx.event || {};
   console.warn('[user/login] OPENID missing', {
     hasEvent: !!ctx.event,
-    hasUserInfo: !!event.userInfo,
     eventKeys: Object.keys(event),
   });
+}
+
+function normalizeProfile({ nickName, avatarUrl } = {}) {
+  const profile = {};
+
+  if (nickName !== undefined) {
+    if (typeof nickName !== 'string') {
+      return { error: '昵称格式不正确' };
+    }
+    const cleanNickName = nickName.trim();
+    if (cleanNickName.length > 20) {
+      return { error: '昵称不能超过 20 个字符' };
+    }
+    if (cleanNickName) profile.nickName = cleanNickName;
+  }
+
+  if (avatarUrl !== undefined) {
+    if (typeof avatarUrl !== 'string') {
+      return { error: '头像格式不正确' };
+    }
+    const cleanAvatarUrl = avatarUrl.trim();
+    if (cleanAvatarUrl.length > 500) {
+      return { error: '头像地址过长' };
+    }
+    if (cleanAvatarUrl && !/^cloud:\/\//.test(cleanAvatarUrl) && !/^https:\/\//.test(cleanAvatarUrl)) {
+      return { error: '头像地址不合法' };
+    }
+    if (cleanAvatarUrl) profile.avatarUrl = cleanAvatarUrl;
+  }
+
+  if (!profile.nickName && !profile.avatarUrl) {
+    return { error: '用户资料不能为空' };
+  }
+
+  return { profile };
+}
+
+function mapUserForClient(user) {
+  return {
+    _id: user._id,
+    openid: user._openid,
+    nickName: user.nickName,
+    avatarUrl: user.avatarUrl,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 }
 
 module.exports = (app) => {
@@ -45,14 +61,11 @@ module.exports = (app) => {
   // ═══════════════════════════════════════════════════
   //  user/login
   //
-  //  注意：user/login 由 auth 白名单放行。
-  //  因为用户此时尚未登录，OPENID 需从云函数调用上下文获取。
+  //  静默身份登录：OPENID 来自 wx-server-sdk getWXContext()，不依赖前端传 openid/code。
   // ═══════════════════════════════════════════════════
 
   app.router('user/login', async (ctx) => {
-    const { nickName, avatarUrl } = ctx.event || {};
-
-    const openId = getOpenId(ctx);
+    const openId = getOpenId();
 
     if (!openId) {
       logOpenIdMissing(ctx);
@@ -61,16 +74,36 @@ module.exports = (app) => {
     }
 
     const repo = UserRepo.create();
-    const user = await repo.upsertUser(openId, { nickName, avatarUrl });
+    const user = await repo.upsertUser(openId, {});
 
     succ(ctx, {
       openid: openId,
-      user: {
-        _id: user._id,
-        nickName: user.nickName,
-        avatarUrl: user.avatarUrl,
-      },
+      user: mapUserForClient(user),
     });
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  user/profile/update
+  // ═══════════════════════════════════════════════════
+
+  app.router('user/profile/update', async (ctx) => {
+    const normalized = normalizeProfile(ctx.event || {});
+    if (normalized.error) {
+      fail(ctx, 400, normalized.error);
+      return;
+    }
+
+    const repo = UserRepo.create();
+    try {
+      const user = await repo.updateProfile(ctx.OPENID, normalized.profile);
+      succ(ctx, mapUserForClient(user));
+    } catch (err) {
+      if (err && err.message === 'USER_NOT_FOUND') {
+        fail(ctx, 404, '用户不存在');
+        return;
+      }
+      throw err;
+    }
   });
 
   // ═══════════════════════════════════════════════════
@@ -80,7 +113,7 @@ module.exports = (app) => {
   app.router('user/settings/get', async (ctx) => {
     const repo = UserRepo.create();
     const settings = await repo.getSettings(ctx.OPENID);
-    succ(ctx, settings || { focusDuration: 25, shortBreak: 5, longBreak: 15, dailyGoal: 4 });
+    succ(ctx, settings || UserRepo.defaultSettings());
   });
 
   // ═══════════════════════════════════════════════════
@@ -96,8 +129,12 @@ module.exports = (app) => {
     }
 
     const repo = UserRepo.create();
-    await repo.updateSettings(ctx.OPENID, settings);
-    succ(ctx, { updated: true });
+    const user = await repo.updateSettings(ctx.OPENID, settings);
+    if (!user) {
+      fail(ctx, 404, '用户不存在');
+      return;
+    }
+    succ(ctx, user.settings || UserRepo.defaultSettings());
   });
 
   // ═══════════════════════════════════════════════════
@@ -111,11 +148,6 @@ module.exports = (app) => {
       fail(ctx, 404, '用户不存在');
       return;
     }
-    succ(ctx, {
-      _id: user._id,
-      nickName: user.nickName,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-    });
+    succ(ctx, mapUserForClient(user));
   });
 };

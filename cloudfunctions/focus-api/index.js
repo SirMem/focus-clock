@@ -8,7 +8,7 @@
  */
 
 const TcbRouter = require('tcb-router');
-const cloud = require('@cloudbase/node-sdk');
+const { cloud, getDb } = require('./utils/cloud');
 
 // ─── 全局中间件 ───
 
@@ -30,11 +30,10 @@ exports.main = async (event, context) => {
   // 全局中间件 —— 按注册顺序依次执行
   // =========================================
 
-  // 1. 初始化云开发 SDK
+  // 1. 注入云开发 SDK 上下文
   app.use(async (ctx, next) => {
-    const c = cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-    ctx.cloud = c;
-    ctx.db = c.database();
+    ctx.cloud = cloud;
+    ctx.db = getDb();
     ctx._ = ctx.db.command;
     ctx.event = ctx.event || event || {};
     ctx.rawEvent = event;

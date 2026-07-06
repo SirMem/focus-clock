@@ -1,11 +1,14 @@
 const { callAPI } = require('./request');
 
 const userAPI = {
-  login(nickName, avatarUrl) {
-    return callAPI('user/login', { nickName, avatarUrl });
+  login(code) {
+    return callAPI('user/login', { code });
   },
   getInfo() {
     return callAPI('user/info');
+  },
+  updateProfile({ nickName, avatarUrl }) {
+    return callAPI('user/profile/update', { nickName, avatarUrl });
   },
   getSettings() {
     return callAPI('user/settings/get');
