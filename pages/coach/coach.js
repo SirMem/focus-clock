@@ -1,55 +1,134 @@
-const WEEKLY_TREND = [
-  { day: '周一', hours: 2.5 },
-  { day: '周二', hours: 3.2 },
-  { day: '周三', hours: 4.5 },
-  { day: '周四', hours: 3.8 },
-  { day: '周五', hours: 2.9 },
-  { day: '周六', hours: 1.5 },
-  { day: '周日', hours: 1.2 },
-];
+const coachAPI = require('../../miniprogram/api/coach.api');
+const statsAPI = require('../../miniprogram/api/stats.api');
+const { formatDuration } = require('../../miniprogram/api/mappers');
 
-const MAX_HOURS = Math.max(...WEEKLY_TREND.map(d => d.hours));
+// 星期标签
+const DAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-const ACHIEVEMENTS = [
-  { icon: '🔥', label: '连续专注', value: '7 天', color: '#FF6B35', bgColor: '#FFF0EB' },
-  { icon: '⭐', label: '完成', value: '50 个番茄', color: '#FFB800', bgColor: '#FFF8E1' },
-  { icon: '📅', label: '本月专注', value: '22h', color: '#4A90D9', bgColor: '#EBF4FF' },
-];
+/**
+ * 从 API 标准响应 { code, data, message } 中提取 data。
+ * 非 0 code 返回 fallback，不 throw，确保单接口失败不会丢弃其他已成功的并行结果。
+ */
+function extractData(res, fallback) {
+  if (!res) return fallback;
+  if (res.code !== undefined) {
+    if (res.code !== 0) return fallback;
+    return 'data' in res ? res.data : fallback;
+  }
+  return res;
+}
 
-const COACHING_HISTORY = [
-  { date: '昨天', text: '尝试使用番茄钟长专注模式，可能更适合你的工作节奏', accepted: true },
-  { date: '6月26日', text: '下午2点后效率下降，建议安排简单任务或休息', accepted: false },
-];
+/**
+ * 将 weeklyStats.dailyBreakdown 转为柱状图所需格式
+ */
+function buildWeeklyTrend(dailyBreakdown) {
+  if (!Array.isArray(dailyBreakdown)) return [];
+  const maxMinutes = Math.max(...dailyBreakdown.map(d => d.focusMinutes || 0), 1);
+  return dailyBreakdown.map((d, i) => ({
+    day: DAY_LABELS[i] || (d.date || '').slice(-5),
+    hours: ((d.focusMinutes || 0) / 60).toFixed(1),
+    height: ((d.focusMinutes || 0) / maxMinutes) * 100,
+  }));
+}
+
+/**
+ * 将 weeklyStats 转为摘要卡片格式
+ */
+function buildWeeklyStats(weekly) {
+  if (!weekly) return [];
+  return [
+    {
+      label: '总时长',
+      value: formatDuration(weekly.totalFocusMinutes || 0),
+    },
+    { label: '完成番茄', value: `${weekly.totalPomodoros || 0} 个` },
+    { label: '活跃天数', value: `${weekly.activeDays || 0}/7 天` },
+  ];
+}
+
+/**
+ * 将 insights 转为成就展示格式（P0: achievement 类型优先）
+ */
+function buildAchievements(insights) {
+  if (!Array.isArray(insights)) return [];
+  return insights
+    .filter(item => item.type === 'achievement')
+    .slice(0, 3)
+    .map(item => ({
+      icon: item.icon || '⭐',
+      label: item.text.slice(0, 8),
+      value: item.value || '达成',
+      color: '#4A90D9',
+      bgColor: '#EBF4FF',
+    }));
+}
 
 Page({
   data: {
     statusBarHeight: 44,
     capsuleHeight: 44,
 
-    weeklyTrend: WEEKLY_TREND.map(d => ({
-      ...d,
-      height: (d.hours / MAX_HOURS) * 100,
-    })),
-    weeklyStats: [
-      { label: '总时长', value: '19.6h' },
-      { label: '完成任务', value: '24 个' },
-      { label: '专注率', value: '87%' },
-    ],
-    achievements: ACHIEVEMENTS,
-    coachingHistory: COACHING_HISTORY,
+    loading: true,
+    // hero card
+    score: 0,
+    level: '新手',
+    // suggestion
+    suggestionText: '',
     suggestionAccepted: false,
+    // insights / weekly
+    weeklyTrend: [],
+    weeklyStats: [],
+    achievements: [],
+    coachingHistory: [],
   },
 
   onLoad() {
     const sys = wx.getWindowInfo();
     const statusBarHeight = sys.statusBarHeight || 44;
     this.setData({ statusBarHeight, capsuleHeight: 44 });
+    this._loadCoachData();
+  },
+
+  async _loadCoachData() {
+    this.setData({ loading: true });
+    try {
+      const [scoreRes, tipRes, weeklyRes] = await Promise.all([
+        coachAPI.score(),
+        coachAPI.tip(),
+        statsAPI.weekly(),
+      ]);
+
+      const scoreData = extractData(scoreRes, null);
+      const tipData = extractData(tipRes, null);
+      const weeklyData = extractData(weeklyRes, null);
+
+      const didFail = !scoreData || !tipData || !weeklyData;
+
+      this.setData({
+        score: scoreData ? scoreData.score : 0,
+        level: scoreData ? scoreData.level : '新手',
+        suggestionText: tipData ? tipData.tip : '',
+        weeklyTrend: weeklyData ? buildWeeklyTrend(weeklyData.dailyBreakdown) : [],
+        weeklyStats: weeklyData ? buildWeeklyStats(weeklyData) : [],
+        achievements: scoreData ? buildAchievements(scoreData.insights) : [],
+        coachingHistory: [],
+        loading: false,
+      });
+
+      if (didFail) {
+        wx.showToast({ title: '部分教练数据加载失败', icon: 'none' });
+      }
+    } catch (err) {
+      console.error('[coach] 加载教练数据失败', err);
+      wx.showToast({ title: '加载教练数据失败', icon: 'none' });
+      this.setData({ loading: false });
+    }
   },
 
   onAcceptSuggestion() {
     if (this.data.suggestionAccepted) return;
     this.setData({ suggestionAccepted: true });
-    wx.showToast({ title: '已采纳建议 ✓', icon: 'success' });
+    wx.showToast({ title: '已采纳建议', icon: 'success' });
   },
 
   onViewAllAchievements() {

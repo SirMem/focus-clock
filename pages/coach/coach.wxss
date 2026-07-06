@@ -538,3 +538,26 @@
   font-size: 22rpx;
   color: #8A8A9A;
 }
+
+/* ===== Empty states ===== */
+.weekly-chart-empty {
+  height: 256rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32rpx;
+  color: #8A8A9A;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.history-suggestions-empty {
+  padding: 48rpx 32rpx;
+  text-align: center;
+}
+
+.history-empty-text {
+  font-size: 24rpx;
+  color: #8A8A9A;
+  line-height: 1.6;
+}

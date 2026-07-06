@@ -22,17 +22,16 @@
       <view class="hero-deco-2"></view>
       <view class="hero-content">
         <view class="hero-left">
-          <text class="hero-label">今日效率评分</text>
+          <text class="hero-label">本周效率评分</text>
           <view class="hero-score-wrap">
-            <text class="hero-score">92</text>
+            <text class="hero-score">{{score}}</text>
             <text class="hero-score-unit">分</text>
           </view>
           <view class="hero-badge-row">
             <view class="hero-badge">
-              <text class="hero-badge-icon-text">↑</text>
-              <text class="hero-badge-text">+5 分</text>
+              <text class="hero-badge-icon-text">⭐</text>
+              <text class="hero-badge-text">{{level}}</text>
             </view>
-            <text class="hero-badge-desc">较昨日</text>
           </view>
         </view>
         <view class="hero-avatar">
@@ -47,11 +46,8 @@
         <text class="insight-icon">📊</text>
         <text class="insight-title">趋势洞察</text>
       </view>
-      <text class="insight-text">
-        你这周专注时长比上周提升了<text class="insight-highlight-green">15%</text>，
-        <text class="insight-highlight-blue">周三上午</text>是你的效率高峰时段。继续加油！
-      </text>
-      <!-- Sparkline SVG -->
+      <text class="insight-text">{{suggestionText || '开始你的第一个专注，让教练更了解你'}}</text>
+      <!-- Sparkline -->
       <view class="sparkline-wrap">
         <view class="sparkline">
           <svg width="100%" height="100%" viewBox="0 0 280 64">
@@ -75,7 +71,7 @@
       </view>
       <view class="sparkline-footer">
         <text class="sparkline-label">本周趋势</text>
-        <text class="sparkline-up">↑ 15%</text>
+        <text class="sparkline-up">专注中</text>
       </view>
     </view>
 
@@ -85,10 +81,7 @@
         <text class="suggestion-icon">💡</text>
         <text class="suggestion-title">今日建议</text>
       </view>
-      <text class="suggestion-text">
-        建议明天把最难的任务安排在<text class="suggestion-highlight">9-11点</text>，
-        这是你本周效率最高的时段。
-      </text>
+      <text class="suggestion-text">{{suggestionText || '完成一次专注后，AI 教练会为你生成个性化建议'}}</text>
       <view
         class="suggestion-btn {{suggestionAccepted ? 'suggestion-btn-disabled' : ''}}"
         bind:tap="onAcceptSuggestion"
@@ -98,7 +91,7 @@
     </view>
 
     <!-- ===== 成就徽章 ===== -->
-    <view class="achievement-section">
+    <view class="achievement-section" wx:if="{{achievements.length > 0}}">
       <view class="achievement-header">
         <text class="achievement-title">成就徽章</text>
         <view class="achievement-view-all" bind:tap="onViewAllAchievements">
@@ -134,7 +127,7 @@
       </view>
 
       <!-- Bar Chart (CSS) -->
-      <view class="weekly-chart">
+      <view class="weekly-chart" wx:if="{{weeklyTrend.length > 0}}">
         <view
           wx:for="{{weeklyTrend}}"
           wx:key="index"
@@ -148,6 +141,9 @@
           </view>
           <text class="weekly-bar-label">{{item.day}}</text>
         </view>
+      </view>
+      <view wx:else class="weekly-chart-empty">
+        <text>暂无周趋势数据，开始专注后这里会显示柱状图</text>
       </view>
 
       <!-- 统计摘要 -->
@@ -163,18 +159,23 @@
     <view class="history-suggestions">
       <text class="history-suggestions-title">历史建议</text>
       <view class="history-suggestions-list">
-        <view
-          wx:for="{{coachingHistory}}"
-          wx:key="index"
-          class="history-suggestion-item"
-        >
-          <view class="history-suggestion-icon {{item.accepted ? 'history-icon-accepted' : ''}}">
-            <text>{{item.accepted ? '✓' : '💡'}}</text>
+        <view wx:if="{{coachingHistory.length > 0}}">
+          <view
+            wx:for="{{coachingHistory}}"
+            wx:key="index"
+            class="history-suggestion-item"
+          >
+            <view class="history-suggestion-icon {{item.accepted ? 'history-icon-accepted' : ''}}">
+              <text>{{item.accepted ? '✓' : '💡'}}</text>
+            </view>
+            <view class="history-suggestion-content">
+              <text class="history-suggestion-date">{{item.date}}</text>
+              <text class="history-suggestion-text">{{item.text}}</text>
+            </view>
           </view>
-          <view class="history-suggestion-content">
-            <text class="history-suggestion-date">{{item.date}}</text>
-            <text class="history-suggestion-text">{{item.text}}</text>
-          </view>
+        </view>
+        <view wx:else class="history-suggestions-empty">
+          <text class="history-empty-text">暂无历史建议，开始专注后 AI 教练会为你提供个性化指导</text>
         </view>
       </view>
     </view>
