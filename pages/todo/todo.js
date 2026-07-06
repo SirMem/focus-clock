@@ -417,6 +417,13 @@ Page({
   },
 
   async _doDelete(id) {
+    // 检查该任务是否正在被专注页使用中
+    const activeFocusTaskId = wx.getStorageSync('focus_active_task');
+    if (activeFocusTaskId && activeFocusTaskId === id) {
+      wx.showToast({ title: '该任务正在进行专注，无法删除', icon: 'none' });
+      return;
+    }
+
     try {
       await taskAPI.delete(id);
       await this._loadTasks({ silent: true });
@@ -473,7 +480,7 @@ Page({
           try {
             const doneTasks = this.data.tasks.filter(t => t.done);
             for (const t of doneTasks) {
-              await taskAPI.delete(t.id);
+              await this._doDelete(t.id);
             }
             await this._loadTasks({ silent: true });
           } catch (err) {

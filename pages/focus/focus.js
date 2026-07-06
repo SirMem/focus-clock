@@ -173,11 +173,33 @@ Page({
   start() {
     if (this.data.timerState === 'running') return;
 
+    // 如果上轮计时刚结束（timeLeft 为 0），先复位到满时长
+    if (this.data.timeLeft <= 0) {
+      this.setData({
+        timeLeft: DURATIONS[this.data.mode],
+        progress: 0,
+      });
+    }
+
     // focus 模式必须选择任务才能开始
     if (this.data.mode === 'focus' && !this.data.selectedTaskId) {
       this.onTaskPickerOpen();
       wx.showToast({ title: '请先选择一个待办任务', icon: 'none' });
       return;
+    }
+
+    // focus 模式下验证所选任务仍存在（可能被其他端删除）
+    if (this.data.mode === 'focus' && this.data.selectedTaskId) {
+      const taskExists = this.data.availableTasks.some(t => t.id === this.data.selectedTaskId);
+      if (!taskExists) {
+        this.setData({ selectedTaskId: '', currentTask: '' });
+        wx.removeStorageSync('focus_active_task');
+        this.onTaskPickerOpen();
+        wx.showToast({ title: '任务已失效，请重新选择', icon: 'none' });
+        return;
+      }
+      // 加锁：标记当前正在专注的任务，阻止待办页误删
+      wx.setStorageSync('focus_active_task', this.data.selectedTaskId);
     }
 
     this.setData({ timerState: 'running' });
@@ -186,21 +208,16 @@ Page({
       if (t <= 1) {
         clearInterval(this.timer);
         this.timer = null;
-        const sessions = this.data.mode === 'focus' ? this.data.sessions + 1 : this.data.sessions;
-        const tipIndex = (this.data.tipIndex + 1) % AI_TIPS.length;
+        // 仅设置视觉完成状态，sessions 计数由 _onTimerComplete → _loadTodayStats 从服务端权威获取
         this.setData({
           timerState: 'idle',
           timeLeft: 0,
           progress: 1,
-          sessions,
-          statItems: this._buildStatItems(sessions),
-          currentTip: AI_TIPS[tipIndex],
-          tipIndex,
         });
         // 计时结束震动反馈
         wx.vibrateShort({ type: 'medium' });
 
-        // 记录完成会话并刷新数据
+        // 记录完成会话并刷新数据（异步，不阻塞 UI）
         this._onTimerComplete();
         return;
       }
@@ -212,11 +229,12 @@ Page({
   },
 
   async _onTimerComplete() {
+    const mode = this.data.mode;
+    const taskId = this.data.selectedTaskId;
     try {
-      const mode = this.data.mode;
       const isFocus = mode === 'focus';
       await sessionAPI.complete(mode, DURATIONS[mode], {
-        taskId: this.data.selectedTaskId || null,
+        taskId: taskId || null,
         completedPomodoro: isFocus,
       });
       // 刷新统计和任务列表
@@ -224,8 +242,24 @@ Page({
         this._loadTodayStats(),
         this._loadAvailableTasks(),
       ]);
+      // 成功完成一轮后推进 AI 提示语
+      if (isFocus) {
+        const tipIndex = (this.data.tipIndex + 1) % AI_TIPS.length;
+        this.setData({ currentTip: AI_TIPS[tipIndex], tipIndex });
+      }
     } catch (err) {
       console.error('Failed to record session', err);
+      wx.showToast({ title: '专注记录保存失败，请稍后重试', icon: 'none' });
+    } finally {
+      // 如果新 session 已启动（用户快速重开），不要覆盖新 session 的状态
+      if (this.data.timerState !== 'running') {
+        this.setData({
+          timeLeft: DURATIONS[mode],
+          progress: 0,
+        });
+        // 解除任务锁定
+        wx.removeStorageSync('focus_active_task');
+      }
     }
   },
 
@@ -242,6 +276,7 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync('focus_active_task');
     this.setData({
       timerState: 'idle',
       timeLeft: DURATIONS[this.data.mode],
@@ -254,6 +289,7 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync('focus_active_task');
     const nextMode = this.data.mode === 'focus' ? 'shortBreak' : 'focus';
     const color = MODE_COLORS[nextMode];
     this.setData({
@@ -290,6 +326,8 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    // 切换模式时解除任务锁定
+    wx.removeStorageSync('focus_active_task');
     const color = MODE_COLORS[m];
     this.setData({
       mode: m,
@@ -360,5 +398,6 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync('focus_active_task');
   },
 });
