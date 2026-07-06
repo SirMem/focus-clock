@@ -30,6 +30,24 @@ const MESSAGES = {
 const PRIORITIES = ['high', 'medium', 'low'];
 const PRIORITY_DEFAULT = 'medium';
 
+// ─── Task v2 规划字段 ───
+
+const TASK_REPEAT_TYPES = ['none', 'daily', 'weekly', 'weekdays'];
+const TASK_REPEAT_DEFAULT = {
+  enabled: false,
+  type: 'none',
+  interval: 1,
+};
+const TASK_LIMITS = {
+  TITLE_MAX: 100,
+  DESCRIPTION_MAX: 500,
+  ESTIMATED_POMODOROS_MIN: 1,
+  ESTIMATED_POMODOROS_MAX: 12,
+  SUBTASKS_MAX: 20,
+  REPEAT_INTERVAL_MIN: 1,
+  REPEAT_INTERVAL_MAX: 365,
+};
+
 // ─── 情绪标签枚举 ───
 
 const EMOTION_TAGS = ['开心', '平静', '焦虑', '疲惫', '沮丧', '兴奋', '无聊'];
@@ -57,6 +75,9 @@ module.exports = {
   MESSAGES,
   PRIORITIES,
   PRIORITY_DEFAULT,
+  TASK_REPEAT_TYPES,
+  TASK_REPEAT_DEFAULT,
+  TASK_LIMITS,
   EMOTION_TAGS,
   PAGING,
   DURATIONS,

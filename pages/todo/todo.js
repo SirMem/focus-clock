@@ -7,26 +7,71 @@ const PRIORITY_COLORS = {
   low: '#C0C4CC',
 };
 
+const PRIORITY_OPTIONS = [
+  { key: 'low', label: '低' },
+  { key: 'medium', label: '中' },
+  { key: 'high', label: '高' },
+];
+
+const POMODORO_OPTIONS = [1, 2, 3, 4];
+
+const REPEAT_OPTIONS = [
+  { key: 'daily', label: '每天' },
+  { key: 'weekly', label: '每周' },
+  { key: 'weekdays', label: '工作日' },
+];
+
 const FILTERS = [
   { key: 'all', label: '全部' },
   { key: 'active', label: '进行中' },
   { key: 'done', label: '已完成' },
 ];
 
+function createEmptyForm() {
+  const now = new Date();
+  const date = formatDate(now);
+  return {
+    title: '',
+    description: '',
+    priority: 'medium',
+    estimatedPomodoros: 1,
+    enableSubtasks: false,
+    subtasks: [{ id: `local_${Date.now()}`, title: '', completed: false }],
+    enableDue: false,
+    dueDate: date,
+    dueTime: '18:00',
+    enableRepeat: false,
+    repeatType: 'daily',
+  };
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 Page({
   data: {
     statusBarHeight: 44,
     capsuleHeight: 44,
     filters: FILTERS,
+    priorityOptions: PRIORITY_OPTIONS,
+    pomodoroOptions: POMODORO_OPTIONS,
+    repeatOptions: REPEAT_OPTIONS,
     hasInput: false,
     tasks: [],
+    filteredTasks: [],
     input: '',
     filter: 'all',
     priorityColors: PRIORITY_COLORS,
     emptyText: '暂无任务，添加一个吧 🎯',
     loading: false,
+    savingTask: false,
     errorText: '',
+    showTaskModal: false,
+    taskForm: createEmptyForm(),
   },
 
   onLoad() {
@@ -41,6 +86,15 @@ Page({
       this._loadTasks();
       this._updateComputed();
     });
+  },
+
+  onReady() {
+    // 页面就绪后，延迟触发首个任务的"轻推"提示动画
+    this._hintTimer = setTimeout(() => this._doSwipeHint(), 1200);
+  },
+
+  onUnload() {
+    if (this._hintTimer) clearTimeout(this._hintTimer);
   },
 
   // ─── 筛选参数 ───
@@ -69,11 +123,6 @@ Page({
     }
   },
 
-  onReady() {
-    // 页面就绪后，延迟触发首个任务的"轻推"提示动画
-    this._hintTimer = setTimeout(() => this._doSwipeHint(), 1200);
-  },
-
   // ─── 计算属性 ───
   // (WeChat 不支持 getter 用于 WXML，需通过 _updateComputed 手工计算)
 
@@ -96,7 +145,7 @@ Page({
     });
   },
 
-  // ─── 事件处理 ───
+  // ─── 快速添加 ───
 
   onInputChange(e) {
     const val = e.detail.value;
@@ -111,12 +160,140 @@ Page({
     if (!text) return;
 
     try {
-      await taskAPI.create(text, 'medium', 1);
+      await taskAPI.create({ title: text });
       this.setData({ input: '', hasInput: false });
       await this._loadTasks({ silent: true });
     } catch (err) {
       wx.showToast({ title: '创建失败', icon: 'none' });
     }
+  },
+
+  // ─── 完整任务弹窗 ───
+
+  onFabTap() {
+    this.setData({
+      showTaskModal: true,
+      taskForm: createEmptyForm(),
+    });
+  },
+
+  closeTaskModal() {
+    this.setData({ showTaskModal: false, savingTask: false });
+  },
+
+  stopModalTap() {},
+
+  onFormTitleInput(e) {
+    this.setData({ 'taskForm.title': e.detail.value });
+  },
+
+  onFormDescriptionInput(e) {
+    this.setData({ 'taskForm.description': e.detail.value });
+  },
+
+  onPrioritySelect(e) {
+    this.setData({ 'taskForm.priority': e.currentTarget.dataset.key });
+  },
+
+  onPomodoroSelect(e) {
+    this.setData({ 'taskForm.estimatedPomodoros': Number(e.currentTarget.dataset.value) });
+  },
+
+  toggleFormSubtasks() {
+    const enableSubtasks = !this.data.taskForm.enableSubtasks;
+    this.setData({ 'taskForm.enableSubtasks': enableSubtasks });
+  },
+
+  onSubtaskInput(e) {
+    const index = e.currentTarget.dataset.index;
+    this.setData({ [`taskForm.subtasks[${index}].title`]: e.detail.value });
+  },
+
+  addSubtask() {
+    const subtasks = this.data.taskForm.subtasks.slice();
+    if (subtasks.length >= 20) {
+      wx.showToast({ title: '最多 20 个步骤', icon: 'none' });
+      return;
+    }
+    subtasks.push({ id: `local_${Date.now()}_${subtasks.length}`, title: '', completed: false });
+    this.setData({ 'taskForm.subtasks': subtasks });
+  },
+
+  removeSubtask(e) {
+    const index = e.currentTarget.dataset.index;
+    const subtasks = this.data.taskForm.subtasks.slice();
+    subtasks.splice(index, 1);
+    this.setData({
+      'taskForm.subtasks': subtasks.length ? subtasks : [{ id: `local_${Date.now()}`, title: '', completed: false }],
+    });
+  },
+
+  toggleFormDue() {
+    this.setData({ 'taskForm.enableDue': !this.data.taskForm.enableDue });
+  },
+
+  onDueDateChange(e) {
+    this.setData({ 'taskForm.dueDate': e.detail.value });
+  },
+
+  onDueTimeChange(e) {
+    this.setData({ 'taskForm.dueTime': e.detail.value });
+  },
+
+  toggleFormRepeat() {
+    const enableRepeat = !this.data.taskForm.enableRepeat;
+    this.setData({
+      'taskForm.enableRepeat': enableRepeat,
+      'taskForm.repeatType': enableRepeat ? this.data.taskForm.repeatType : 'daily',
+    });
+  },
+
+  onRepeatSelect(e) {
+    this.setData({ 'taskForm.repeatType': e.currentTarget.dataset.key });
+  },
+
+  async saveTaskFromModal() {
+    if (this.data.savingTask) return;
+
+    const form = this.data.taskForm;
+    const title = form.title.trim();
+    if (!title) {
+      wx.showToast({ title: '请填写任务标题', icon: 'none' });
+      return;
+    }
+
+    const payload = {
+      title,
+      description: form.description.trim(),
+      priority: form.priority,
+      estimatedPomodoros: form.estimatedPomodoros,
+      subtasks: form.enableSubtasks
+        ? form.subtasks
+          .map(item => ({ title: item.title.trim(), completed: false }))
+          .filter(item => item.title)
+        : [],
+      dueAt: form.enableDue ? this._buildDueAt(form.dueDate, form.dueTime) : null,
+      repeat: form.enableRepeat
+        ? { enabled: true, type: form.repeatType, interval: 1 }
+        : { enabled: false, type: 'none', interval: 1 },
+    };
+
+    this.setData({ savingTask: true });
+    try {
+      await taskAPI.create(payload);
+      this.setData({ showTaskModal: false, savingTask: false, taskForm: createEmptyForm() });
+      await this._loadTasks({ silent: true });
+      wx.showToast({ title: '已保存', icon: 'success' });
+    } catch (err) {
+      this.setData({ savingTask: false });
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  _buildDueAt(date, time) {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
   },
 
   // ─── 滑动删除手势 ───
@@ -293,12 +470,6 @@ Page({
     this.setData({ filter: key }, () => {
       this._loadTasks({ silent: true });
     });
-  },
-
-  onFabTap() {
-    // 滚动到顶部并聚焦输入框
-    this.setData({ input: '' });
-    wx.pageScrollTo({ scrollTop: 0, duration: 300 });
   },
 
   async onMenuTap() {
