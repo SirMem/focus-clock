@@ -79,6 +79,22 @@ class DailySummaryRepo {
     return res.data[0] || null;
   }
 
+  /**
+   * P2-2: 按日期范围批量查询日汇总记录（替代逐日查询的 N+1 问题）
+   *
+   * @param {string} openId
+   * @param {string} startDate - YYYY-MM-DD 起始日期（含）
+   * @param {string} endDate   - YYYY-MM-DD 结束日期（含）
+   * @returns {Promise<object[]>} 日期范围内的所有汇总记录
+   */
+  async findByDateRange(openId, startDate, endDate) {
+    const res = await this.collection.where({
+      _openid: openId,
+      date: this._.gte(startDate).and(this._.lte(endDate)),
+    }).get();
+    return res.data;
+  }
+
 }
 
 module.exports = DailySummaryRepo;

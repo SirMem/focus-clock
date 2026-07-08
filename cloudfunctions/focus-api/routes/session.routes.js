@@ -19,12 +19,12 @@ module.exports = (app) => {
   // ═══════════════════════════════════════════════════
 
   app.router('session/complete', async (ctx) => {
-    const { mode, duration, taskId, completedPomodoro } = ctx.event;
+    const { mode, duration, taskId, completedPomodoro, idempotencyKey } = ctx.event;
 
     // ── 参数校验 ──
     if (!validate(ctx, { mode: V.requiredEnum(MODES) })) return;
     if (!validate(ctx, { duration: V.number(1) })) return;
-    // taskId 和 completedPomodoro 为可选，无需强制校验
+    // taskId、completedPomodoro、idempotencyKey 为可选，无需强制校验
 
     // ── 调用 Service ──
     const service = SessionService.create();
@@ -33,6 +33,7 @@ module.exports = (app) => {
       duration,
       taskId,
       completedPomodoro,
+      idempotencyKey,
     });
 
     succ(ctx, result);

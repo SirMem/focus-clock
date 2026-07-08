@@ -46,20 +46,37 @@ class SessionService {
    * 完成一个专注会话
    *
    * 流程:
+   *   0. P0-2: 幂等键检查，防止重复提交
    *   1. 构建 session 文档并插入
    *   2. 如果是番茄钟（focus + isPomodoro），更新当日汇总
    *   3. 如果关联了 taskId，递增任务的 completedPomodoros
    *   4. 查询当日所有会话，计算累计统计
    *
+   * P0-1: 步骤 2-3 失败时补偿删除步骤 1 的 session 记录，保证数据一致性。
+   * P1-2: 步骤 3 递增后重新查询真实值，避免并发场景返回值不准。
+   *
    * @param {string} openId
-   * @param {{ mode: string, duration: number, taskId?: string, completedPomodoro?: boolean }} params
+   * @param {{ mode: string, duration: number, taskId?: string, completedPomodoro?: boolean, idempotencyKey?: string }} params
    * @returns {Promise<{ session: object, task?: object, todayStats: object }>}
    */
-  async completeSession(openId, { mode, duration, taskId, completedPomodoro }) {
+  async completeSession(openId, { mode, duration, taskId, completedPomodoro, idempotencyKey }) {
     const now = Date.now();
     const completedAt = now;
     const startedAt = completedAt - duration * 1000;
     const isPomodoro = mode === 'focus' && completedPomodoro !== false;
+
+    // ── 0. P0-2: 幂等键防重复 ──
+    if (idempotencyKey) {
+      const existing = await this.sessionRepo.findByIdempotencyKey(openId, idempotencyKey);
+      if (existing) {
+        const todaySessions = await this.sessionRepo.getTodaySessions(openId);
+        return {
+          session: existing,
+          todayStats: this._calcTodayStats(todaySessions),
+          deduplicated: true,
+        };
+      }
+    }
 
     // ── 1. 插入 session 记录 ──
     const sessionRecord = {
@@ -70,35 +87,42 @@ class SessionService {
       completedAt,
       taskId: taskId || null,
       isPomodoro,
+      idempotencyKey: idempotencyKey || null,
       createdAt: now,
     };
 
     const created = await this.sessionRepo.insert(sessionRecord);
 
-    // ── 2. 如果是番茄钟，更新当日汇总 ──
-    if (isPomodoro) {
-      const dateStr = getDateStr();
-      await this.dailySummaryRepo.upsert(openId, dateStr, {
-        focusMinutes: Math.round(duration / 60),
-        pomodoroCount: 1,
-      });
+    // ── 2-3. 更新日汇总 + 任务（P0-1: 补偿模式） ──
+    try {
+      if (isPomodoro) {
+        const dateStr = getDateStr();
+        await this.dailySummaryRepo.upsert(openId, dateStr, {
+          focusMinutes: Math.round(duration / 60),
+          pomodoroCount: 1,
+        });
+      }
+
+      let task = null;
+      if (taskId) {
+        task = await this._incrementTaskPomodoros(taskId, openId);
+      }
+
+      // ── 4. 当日累计统计 ──
+      const todaySessions = await this.sessionRepo.getTodaySessions(openId);
+      const todayStats = this._calcTodayStats(todaySessions);
+
+      return {
+        session: created,
+        task: task || undefined,
+        todayStats,
+      };
+    } catch (err) {
+      // P0-1: 补偿——删除已插入的 session，保证数据一致性
+      console.error('[SessionService.completeSession] 部分写入失败，执行补偿删除:', err.message);
+      await this.sessionRepo.deleteById(created._id);
+      throw err;
     }
-
-    // ── 3. 如果关联了 task，递增 completedPomodoros ──
-    let task = null;
-    if (taskId) {
-      task = await this._incrementTaskPomodoros(taskId, openId);
-    }
-
-    // ── 4. 当日累计统计 ──
-    const todaySessions = await this.sessionRepo.getTodaySessions(openId);
-    const todayStats = this._calcTodayStats(todaySessions);
-
-    return {
-      session: created,
-      task: task || undefined,
-      todayStats,
-    };
   }
 
   // ═══════════════════════════════════════════════════
@@ -130,6 +154,9 @@ class SessionService {
 
   /**
    * 递增关联任务的 completedPomodoros
+   *
+   * P1-2: 递增后重新查询真实值，避免并发场景下基于旧值 +1 导致返回值不准。
+   *
    * @private
    */
   async _incrementTaskPomodoros(taskId, openId) {
@@ -150,9 +177,11 @@ class SessionService {
       },
     });
 
+    // P1-2: 更新后重新查询，获取数据库中的真实值
+    const updated = await db.collection('tasks').doc(taskId).get();
     return {
       _id: taskId,
-      completedPomodoros: (taskRes.data[0].completedPomodoros || 0) + 1,
+      completedPomodoros: updated.data.completedPomodoros || 0,
     };
   }
 

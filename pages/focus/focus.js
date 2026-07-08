@@ -21,6 +21,8 @@ const MODE_LABELS = {
   longBreak: '长休息',
 };
 
+const STORAGE_KEY = 'pomodoro_state';
+
 const AI_TIPS = [
   '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。',
   '研究表明，短暂休息能提升大脑效率47%。加油，你做得很棒！',
@@ -37,15 +39,6 @@ const SOUNDS = [
   { id: 'ocean', label: '🌊 海浪' },
   { id: 'white', label: '❄️ 白噪音' },
 ];
-
-const TAB_LABELS = {
-  focus: '专注',
-  todo: '待办',
-  stats: '统计',
-  diary: '日记',
-  profile: '我的',
-  coach: '教练',
-};
 
 const TAB_ITEMS = [
   { key: 'focus', label: '专注', icon: 'focus' },
@@ -71,6 +64,14 @@ Page({
     currentSound: 'none',
     currentTip: AI_TIPS[0],
     tipIndex: 0,
+
+    // P0-2: 防重复提交
+    completing: false,
+
+    // P1-1: 墙钟计时（Date.now() 基准）
+    startTime: 0,
+    totalSeconds: DURATIONS.focus,
+    sessionIdempotencyKey: '',
 
     // UI 数据
     sounds: SOUNDS,
@@ -108,6 +109,46 @@ Page({
       this._loadTodayStats(),
       this._loadAvailableTasks(),
     ]);
+  },
+
+  // P1-1: 小程序从后台切回前台时恢复计时器
+  onShow() {
+    const saved = wx.getStorageSync(STORAGE_KEY);
+    if (!saved) return;
+    // 如果计时器已经在运行中，不需要恢复
+    if (this.data.timerState === 'running') return;
+    // 只恢复 running 状态的计时器
+    if (saved.status !== 'running') return;
+
+    const now = Date.now();
+    const elapsed = Math.floor((now - saved.startTime) / 1000);
+    const remaining = Math.max(0, saved.totalSeconds - elapsed);
+
+    wx.removeStorageSync(STORAGE_KEY);
+
+    if (remaining <= 0) {
+      // 计时已在后台期间到期
+      this.setData({
+        timerState: 'idle',
+        timeLeft: 0,
+        progress: 1,
+        mode: saved.mode || this.data.mode,
+      });
+      wx.vibrateShort({ type: 'medium' });
+      this._onTimerComplete(saved.taskId, saved.mode, saved.idempotencyKey);
+    } else {
+      // 恢复计时
+      this.setData({
+        startTime: saved.startTime,
+        totalSeconds: saved.totalSeconds,
+        timeLeft: remaining,
+        mode: saved.mode || this.data.mode,
+        selectedTaskId: saved.taskId || this.data.selectedTaskId,
+        sessionIdempotencyKey: saved.idempotencyKey || '',
+        timerState: 'running',
+      });
+      this._startInterval();
+    }
   },
 
   // ===== 任务选择 =====
@@ -169,7 +210,15 @@ Page({
     }
   },
 
-  // ===== 计时器逻辑 =====
+  // ===== 计时器逻辑（P1-1: 墙钟计时） =====
+
+  /**
+   * 启动计时器（开始或恢复）
+   *
+   * P1-1: 使用 Date.now() 作为时间基准，而非依赖 setInterval 计数。
+   * 即使小程序进入后台 setInterval 被降频，切回前台后 onShow 会根据 startTime 重新计算。
+   * P0-2: 生成幂等键，防止后端重复写入。
+   */
   start() {
     if (this.data.timerState === 'running') return;
 
@@ -202,40 +251,94 @@ Page({
       wx.setStorageSync('focus_active_task', this.data.selectedTaskId);
     }
 
-    this.setData({ timerState: 'running' });
+    // P0-2: 生成幂等键（用于本次计时完成后端去重）
+    // 只在全新开始（timerState === 'idle'）时生成，暂停恢复时沿用已有 key
+    if (this.data.timerState === 'idle') {
+      const idempotencyKey = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      this.setData({ sessionIdempotencyKey: idempotencyKey });
+    }
+
+    // P1-1: 记录/重置墙钟基准
+    const effectiveStart = Date.now();
+    const totalSeconds = this.data.timeLeft;
+
+    this.setData({
+      startTime: effectiveStart,
+      totalSeconds,
+      timerState: 'running',
+    });
+
+    // 持久化到本地存储，供 onShow 恢复
+    wx.setStorageSync(STORAGE_KEY, {
+      startTime: effectiveStart,
+      totalSeconds,
+      mode: this.data.mode,
+      status: 'running',
+      taskId: this.data.selectedTaskId,
+      idempotencyKey: this.data.sessionIdempotencyKey,
+    });
+
+    this._startInterval();
+  },
+
+  /**
+   * 启动计时器 setInterval（P1-1: 基于 Date.now() 计算剩余时间）
+   * @private
+   */
+  _startInterval() {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+
     this.timer = setInterval(() => {
-      let t = this.data.timeLeft;
-      if (t <= 1) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - this.data.startTime) / 1000);
+      const remaining = Math.max(0, this.data.totalSeconds - elapsed);
+      const total = this.data.totalSeconds;
+      const progress = total > 0 ? (total - remaining) / total : 0;
+
+      this.setData({ timeLeft: remaining, progress });
+
+      if (remaining <= 0) {
         clearInterval(this.timer);
         this.timer = null;
-        // 仅设置视觉完成状态，sessions 计数由 _onTimerComplete → _loadTodayStats 从服务端权威获取
-        this.setData({
-          timerState: 'idle',
-          timeLeft: 0,
-          progress: 1,
-        });
+        this.setData({ timerState: 'idle', timeLeft: 0, progress: 1 });
+        wx.removeStorageSync(STORAGE_KEY);
+
         // 计时结束震动反馈
         wx.vibrateShort({ type: 'medium' });
 
-        // 记录完成会话并刷新数据（异步，不阻塞 UI）
-        this._onTimerComplete();
-        return;
+        // 记录完成会话（异步，不阻塞 UI）
+        this._onTimerComplete(
+          this.data.selectedTaskId,
+          this.data.mode,
+          this.data.sessionIdempotencyKey,
+        );
       }
-      t -= 1;
-      const total = DURATIONS[this.data.mode];
-      const progress = 1 - t / total;
-      this.setData({ timeLeft: t, progress });
-    }, 1000);
+    }, 250); // 每秒 4 次更新，保证秒级精度
   },
 
-  async _onTimerComplete() {
-    const mode = this.data.mode;
-    const taskId = this.data.selectedTaskId;
+  /**
+   * 计时完成后调用后端接口
+   *
+   * P0-2: completing 状态防连点，idempotencyKey 后端去重。
+   *
+   * @param {string} taskId
+   * @param {string} mode
+   * @param {string} idempotencyKey
+   * @private
+   */
+  async _onTimerComplete(taskId, mode, idempotencyKey) {
+    // P0-2: 防重复提交
+    if (this.data.completing) return;
+    this.setData({ completing: true });
+
     try {
       const isFocus = mode === 'focus';
       await sessionAPI.complete(mode, DURATIONS[mode], {
         taskId: taskId || null,
         completedPomodoro: isFocus,
+        idempotencyKey: idempotencyKey || '',
       });
       // 刷新统计和任务列表
       await Promise.all([
@@ -251,11 +354,13 @@ Page({
       console.error('Failed to record session', err);
       wx.showToast({ title: '专注记录保存失败，请稍后重试', icon: 'none' });
     } finally {
+      this.setData({ completing: false });
       // 如果新 session 已启动（用户快速重开），不要覆盖新 session 的状态
       if (this.data.timerState !== 'running') {
         this.setData({
           timeLeft: DURATIONS[mode],
           progress: 0,
+          sessionIdempotencyKey: '',
         });
         // 解除任务锁定
         wx.removeStorageSync('focus_active_task');
@@ -268,6 +373,18 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+
+    // P1-1: 暂停时持久化当前状态
+    wx.setStorageSync(STORAGE_KEY, {
+      startTime: this.data.startTime,
+      totalSeconds: this.data.totalSeconds,
+      mode: this.data.mode,
+      status: 'paused',
+      timeLeft: this.data.timeLeft,
+      taskId: this.data.selectedTaskId,
+      idempotencyKey: this.data.sessionIdempotencyKey,
+    });
+
     this.setData({ timerState: 'paused' });
   },
 
@@ -276,11 +393,16 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync(STORAGE_KEY);
     wx.removeStorageSync('focus_active_task');
     this.setData({
       timerState: 'idle',
       timeLeft: DURATIONS[this.data.mode],
       progress: 0,
+      startTime: 0,
+      totalSeconds: DURATIONS[this.data.mode],
+      sessionIdempotencyKey: '',
+      completing: false,
     });
   },
 
@@ -289,6 +411,7 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync(STORAGE_KEY);
     wx.removeStorageSync('focus_active_task');
     const nextMode = this.data.mode === 'focus' ? 'shortBreak' : 'focus';
     const color = MODE_COLORS[nextMode];
@@ -297,6 +420,10 @@ Page({
       timerState: 'idle',
       timeLeft: DURATIONS[nextMode],
       progress: 0,
+      startTime: 0,
+      totalSeconds: DURATIONS[nextMode],
+      sessionIdempotencyKey: '',
+      completing: false,
       modeColor: color,
       darkerColor: this._adjustColor(color, -15),
     });
@@ -326,7 +453,8 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
-    // 切换模式时解除任务锁定
+    // 切换模式时清除计时状态和任务锁定
+    wx.removeStorageSync(STORAGE_KEY);
     wx.removeStorageSync('focus_active_task');
     const color = MODE_COLORS[m];
     this.setData({
@@ -334,6 +462,10 @@ Page({
       timerState: 'idle',
       timeLeft: DURATIONS[m],
       progress: 0,
+      startTime: 0,
+      totalSeconds: DURATIONS[m],
+      sessionIdempotencyKey: '',
+      completing: false,
       modeColor: color,
       darkerColor: this._adjustColor(color, -15),
     });
@@ -398,6 +530,7 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    wx.removeStorageSync(STORAGE_KEY);
     wx.removeStorageSync('focus_active_task');
   },
 });

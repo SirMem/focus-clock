@@ -23,11 +23,11 @@ const sessionAPI = {
    * 完成一个专注会话
    * @param {'focus'|'shortBreak'|'longBreak'} mode
    * @param {number} duration - 实际专注时长（秒）
-   * @param {{ taskId?: string, completedPomodoro?: boolean }} [options]
+   * @param {{ taskId?: string, completedPomodoro?: boolean, idempotencyKey?: string }} [options]
    * @returns {Promise<{code: number, data: object, message: string}>}
    */
-  complete(mode, duration, { taskId, completedPomodoro } = {}) {
-    return callAPI('session/complete', { mode, duration, taskId, completedPomodoro });
+  complete(mode, duration, { taskId, completedPomodoro, idempotencyKey } = {}) {
+    return callAPI('session/complete', { mode, duration, taskId, completedPomodoro, idempotencyKey });
   },
 
   /**

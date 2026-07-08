@@ -8,6 +8,7 @@
  */
 
 const { getDb } = require('../utils/cloud');
+const { FAR_FUTURE_TIMESTAMP } = require('../config/constants');
 
 class SessionRepo {
 
@@ -112,10 +113,33 @@ class SessionRepo {
       const gte = startDate ? new Date(startDate).getTime() : 0;
       const lte = endDate
         ? new Date(endDate + 'T23:59:59.999').getTime()
-        : 9e15; // 远大于任何合理时间戳
+        : FAR_FUTURE_TIMESTAMP;
       where.completedAt = this._.gte(gte).and(this._.lte(lte));
     }
     return where;
+  }
+
+  /**
+   * P0-2: 按幂等键查找已存在的 session（防重复提交）
+   * @param {string} openId
+   * @param {string} idempotencyKey
+   * @returns {Promise<object|null>}
+   */
+  async findByIdempotencyKey(openId, idempotencyKey) {
+    const res = await this.collection.where({
+      _openid: openId,
+      idempotencyKey,
+    }).get();
+    return res.data[0] || null;
+  }
+
+  /**
+   * P0-1: 按 _id 删除 session（补偿回滚用）
+   * @param {string} id
+   * @returns {Promise<void>}
+   */
+  async deleteById(id) {
+    await this.collection.doc(id).remove();
   }
 
 }

@@ -4,6 +4,8 @@
  * 提供今日/周/月统计 + 热力图数据的聚合计算。
  * 通过构造函数注入依赖（DailySummaryRepo, SessionRepo），方便测试。
  *
+ * P2-2: 周统计、月统计、热力图均改为一次范围查询，消除 N+1 逐日查询。
+ *
  * 契约: docs/dev-specs/03-stats.md
  */
 
@@ -53,8 +55,7 @@ class StatsService {
   /**
    * 获取本周统计（周一 ~ 周日）
    *
-   * 遍历 7 天逐日查询 daily-summary 记录，
-   * 无数据的天填充 0，确保 dailyBreakdown 始终是 7 项连续数组。
+   * P2-2: 一次范围查询替代 7 次逐日查询。
    *
    * @param {string} openId
    * @returns {Promise<{
@@ -67,18 +68,33 @@ class StatsService {
    */
   async getWeeklyStats(openId) {
     const weekStart = getWeekStart();
-    const dailyBreakdown = [];
 
+    // 计算周日日期（weekStart + 6 天）
+    const weekStartDate = new Date(weekStart);
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    const weekEnd = getDateStr(weekEndDate);
+
+    // P2-2: 一次查询获取 7 天数据
+    const records = await this.dailySummaryRepo.findByDateRange(openId, weekStart, weekEnd);
+
+    // 构建 date → record 映射表
+    const dateMap = {};
+    for (const r of records) {
+      dateMap[r.date] = r;
+    }
+
+    const dailyBreakdown = [];
     let totalFocusMinutes = 0;
     let totalPomodoros = 0;
     let activeDays = 0;
 
     for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
+      const date = new Date(weekStartDate);
       date.setDate(date.getDate() + i);
       const dateStr = getDateStr(date);
+      const record = dateMap[dateStr];
 
-      const record = await this.dailySummaryRepo.findByDate(openId, dateStr);
       const focusMinutes = record ? (record.focusMinutes || 0) : 0;
       const pomodoroCount = record ? (record.pomodoroCount || 0) : 0;
 
@@ -100,7 +116,7 @@ class StatsService {
   /**
    * 获取本月统计
    *
-   * 遍历当月全部天数，统计总专注时长、总番茄数、活跃天数及完成率。
+   * P2-2: 一次范围查询替代 28-31 次逐日查询。
    *
    * @param {string} openId
    * @returns {Promise<{
@@ -117,13 +133,25 @@ class StatsService {
     const [year, month] = monthStr.split('-').map(Number);
     const totalDays = getDaysInMonth(year, month);
 
+    const startDate = `${monthStr}-01`;
+    const endDate = `${monthStr}-${String(totalDays).padStart(2, '0')}`;
+
+    // P2-2: 一次查询获取整月数据
+    const records = await this.dailySummaryRepo.findByDateRange(openId, startDate, endDate);
+
+    // 构建 date → record 映射表
+    const dateMap = {};
+    for (const r of records) {
+      dateMap[r.date] = r;
+    }
+
     let totalFocusMinutes = 0;
     let totalPomodoros = 0;
     let activeDays = 0;
 
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${monthStr}-${String(d).padStart(2, '0')}`;
-      const record = await this.dailySummaryRepo.findByDate(openId, dateStr);
+      const record = dateMap[dateStr];
 
       if (record) {
         totalFocusMinutes += record.focusMinutes || 0;
@@ -145,6 +173,7 @@ class StatsService {
   /**
    * 获取热力图数据（某月每日专注分钟数）
    *
+   * P2-2: 一次范围查询替代 N 次逐日查询。
    * 只返回有数据的日期，无数据的日期由前端组件自行处理。
    *
    * @param {string} openId
@@ -155,18 +184,16 @@ class StatsService {
   async getHeatmapData(openId, year, month) {
     const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
     const totalDays = getDaysInMonth(year, month);
-    const results = [];
+    const startDate = `${monthPrefix}-01`;
+    const endDate = `${monthPrefix}-${String(totalDays).padStart(2, '0')}`;
 
-    for (let d = 1; d <= totalDays; d++) {
-      const dateStr = `${monthPrefix}-${String(d).padStart(2, '0')}`;
-      const record = await this.dailySummaryRepo.findByDate(openId, dateStr);
+    // P2-2: 一次查询获取整月数据
+    const records = await this.dailySummaryRepo.findByDateRange(openId, startDate, endDate);
 
-      if (record) {
-        results.push({ date: dateStr, focusMinutes: record.focusMinutes || 0 });
-      }
-    }
-
-    return results;
+    return records.map(r => ({
+      date: r.date,
+      focusMinutes: r.focusMinutes || 0,
+    }));
   }
 
 }

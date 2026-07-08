@@ -9,6 +9,7 @@
 
 const TcbRouter = require('tcb-router');
 const { cloud, getDb } = require('./utils/cloud');
+const { AppError } = require('./utils/app-error');
 
 // ─── 全局中间件 ───
 
@@ -41,13 +42,22 @@ exports.main = async (event, context) => {
     await next();
   });
 
-  // 2. 统一错误处理（兜底，防止 auth / routes 未捕获异常泄漏）
+  // 2. 统一错误处理（P3-2: 区分 AppError / 常见业务错误 / 未预期错误）
   app.use(async (ctx, next) => {
     try {
       await next();
     } catch (err) {
-      console.error('[Unhandled Error]', err);
-      ctx.body = { code: -1, message: '服务器内部错误' };
+      if (err instanceof AppError) {
+        console.warn('[AppError]', { code: err.code, message: err.message });
+        ctx.body = { code: err.code, message: err.message };
+      } else if (err && err.message === 'USER_NOT_FOUND') {
+        ctx.body = { code: 404, message: '用户不存在' };
+      } else if (err && err.code === 'RESOURCE_NOT_FOUND') {
+        ctx.body = { code: 404, message: '请求的资源不存在' };
+      } else {
+        console.error('[Unhandled Error]', err);
+        ctx.body = { code: -1, message: '服务器内部错误' };
+      }
     }
   });
 

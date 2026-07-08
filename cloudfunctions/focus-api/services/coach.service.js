@@ -1,18 +1,22 @@
 /**
- * coach.service.js —— AI 教练评分引擎
+ * coach.service.js —— AI 教练引擎
  *
- * 基于纯规则引擎计算综合评分、等级和建议，不依赖外部 LLM。
- * 从 daily_summaries 集合拉取近 7 天数据，按三个维度加权评分。
+ * 提供两套教练能力：
+ *   规则引擎（P0 已上线）：评分、等级、洞察、建议
+ *   AI 增强（🆕）：DeepSeek LLM 自然语言周报、情绪-专注关联分析
  *
- * 契约: docs/api-contracts.md §7 · docs/archive/issues/06-coach-module.md
+ * AI 调用失败时自动降级到规则引擎，确保服务永远可用。
+ *
+ * 契约: docs/api-contracts.md §7
  */
 
 const DailySummaryRepo = require('../repositories/daily-summary.repo');
 const SessionRepo = require('../repositories/session.repo');
 const UserRepo = require('../repositories/user.repo');
 const { getDateStr, getWeekStart } = require('../utils/helpers');
+const { COACH } = require('../config/constants');
 
-// ── 评分维度纯函数 ────────────────────────────────────────────
+// ── 评分维度纯函数（P3-3: 阈值来自 config/constants.js） ──────────
 
 /**
  * 持续性 (Consistency) — 权重 40%
@@ -20,10 +24,10 @@ const { getDateStr, getWeekStart } = require('../utils/helpers');
  */
 function calcConsistency(weekData) {
   const activeDays = weekData.filter(d => d.focusMinutes > 0).length;
-  if (activeDays >= 5) return 100;
-  if (activeDays >= 3) return 70;
-  if (activeDays >= 1) return 40;
-  return 0;
+  if (activeDays >= COACH.CONSISTENCY.HIGH) return COACH.SCORE.MAX;        // 100
+  if (activeDays >= COACH.CONSISTENCY.MID) return COACH.SCORE.EXPERT - 1;   // 70
+  if (activeDays >= COACH.CONSISTENCY.LOW) return COACH.SCORE.ADVANCED - 1; // 40
+  return COACH.SCORE.MIN;                                                    // 0
 }
 
 /**
@@ -32,11 +36,11 @@ function calcConsistency(weekData) {
  */
 function calcVolume(weekData) {
   const total = weekData.reduce((s, d) => s + d.pomodoroCount, 0);
-  if (total >= 20) return 100;
-  if (total >= 10) return 70;
-  if (total >= 5) return 40;
-  if (total >= 1) return 20;
-  return 0;
+  if (total >= COACH.VOLUME.HIGH) return COACH.SCORE.MAX;        // 100
+  if (total >= COACH.VOLUME.MID) return COACH.SCORE.EXPERT - 1;   // 70
+  if (total >= COACH.VOLUME.LOW) return COACH.SCORE.ADVANCED - 1; // 40
+  if (total >= COACH.VOLUME.MIN) return COACH.SCORE.BEGINNER - 1;  // 20
+  return COACH.SCORE.MIN;                                          // 0
 }
 
 /**
@@ -46,22 +50,22 @@ function calcVolume(weekData) {
 function calcBalance(weekData) {
   const highDays = weekData.filter(d => d.pomodoroCount >= 2).length;
   const totalActive = weekData.filter(d => d.focusMinutes > 0).length;
-  if (totalActive === 0) return 30;
+  if (totalActive === 0) return COACH.SCORE.FALLBACK;  // 30
   const ratio = highDays / totalActive;
-  if (ratio >= 0.6) return 100;
-  if (ratio >= 0.3) return 60;
-  return 30;
+  if (ratio >= COACH.BALANCE.HIGH_RATIO) return COACH.SCORE.MAX;  // 100
+  if (ratio >= COACH.BALANCE.MID_RATIO) return COACH.SCORE.EXPERT - 1; // 60
+  return COACH.SCORE.FALLBACK;  // 30
 }
 
 /**
- * 分数 → 等级映射
+ * 分数 → 等级映射（P3-3: 阈值来自 config/constants.js）
  */
 function scoreToLevel(score) {
-  if (score >= 81) return '大师';
-  if (score >= 61) return '达人';
-  if (score >= 41) return '进阶';
-  if (score >= 21) return '入门';
-  return '新手';
+  if (score >= COACH.SCORE.MASTER) return COACH.LEVELS.MASTER;
+  if (score >= COACH.SCORE.EXPERT) return COACH.LEVELS.EXPERT;
+  if (score >= COACH.SCORE.ADVANCED) return COACH.LEVELS.ADVANCED;
+  if (score >= COACH.SCORE.BEGINNER) return COACH.LEVELS.BEGINNER;
+  return COACH.LEVELS.NOVICE;
 }
 
 /**
@@ -146,10 +150,23 @@ function generateInsights(score, weekData) {
 
 class CoachService {
 
-  constructor(dailySummaryRepo, sessionRepo, userRepo) {
+  /**
+   * @param {object} dailySummaryRepo
+   * @param {object} sessionRepo
+   * @param {object} userRepo
+   * @param {object} [diaryRepo]      - AI 方法需要
+   * @param {object} [taskRepo]       - AI 方法需要
+   * @param {object} [aiClient]       - AI HTTP 客户端
+   * @param {function} [promptLoader]  - Prompt 模板加载器
+   */
+  constructor(dailySummaryRepo, sessionRepo, userRepo, diaryRepo, taskRepo, aiClient, promptLoader) {
     this.dailySummaryRepo = dailySummaryRepo;
     this.sessionRepo = sessionRepo;
     this.userRepo = userRepo;
+    this.diaryRepo = diaryRepo || require('../repositories/diary.repo').create();
+    this.taskRepo = taskRepo || require('../repositories/task.repo').create();
+    this.aiClient = aiClient || require('../ai/client');
+    this.promptLoader = promptLoader || require('../ai_prompts').loadPromptTemplate;
   }
 
   /**
@@ -175,7 +192,11 @@ class CoachService {
     const consistency = calcConsistency(weekData);
     const volume = calcVolume(weekData);
     const balance = calcBalance(weekData);
-    const score = Math.round(consistency * 0.4 + volume * 0.35 + balance * 0.25);
+    const score = Math.round(
+      consistency * COACH.WEIGHTS.consistency
+      + volume * COACH.WEIGHTS.volume
+      + balance * COACH.WEIGHTS.balance
+    );
     const level = scoreToLevel(score);
     const insights = generateInsights(score, weekData);
 
@@ -220,20 +241,37 @@ class CoachService {
 
   /**
    * 获取最近 7 天的日汇总数据
+   *
+   * P2-2: 一次范围查询替代 7 次逐日查询。
+   *
    * @param {string} openId
    * @returns {Promise<Array<{date: string, focusMinutes: number, pomodoroCount: number}>>}
    * @private
    */
   async _getLast7DaysData(openId) {
     const weekStart = getWeekStart();
-    const results = [];
+    // 计算周日日期
+    const weekStartDate = new Date(weekStart);
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    const weekEnd = getDateStr(weekEndDate);
 
+    // P2-2: 一次查询获取 7 天数据
+    const records = await this.dailySummaryRepo.findByDateRange(openId, weekStart, weekEnd);
+
+    // 构建 date → record 映射表
+    const dateMap = {};
+    for (const r of records) {
+      dateMap[r.date] = r;
+    }
+
+    const results = [];
     for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
+      const date = new Date(weekStartDate);
       date.setDate(date.getDate() + i);
       const dateStr = getDateStr(date);
+      const record = dateMap[dateStr];
 
-      const record = await this.dailySummaryRepo.findByDate(openId, dateStr);
       results.push({
         date: dateStr,
         focusMinutes: record ? (record.focusMinutes || 0) : 0,
@@ -244,6 +282,225 @@ class CoachService {
     return results;
   }
 
+  // ════════════════════════════════════════════════════════════
+  //  🆕 AI 增强方法
+  // ════════════════════════════════════════════════════════════
+
+  /**
+   * AI 周报 — 基于本周数据生成个性化自然语言报告
+   *
+   * 收集 5 类数据 → 读取 prompt 模板 → 调用 DeepSeek → 解析 JSON
+   * 任何环节失败 → 降级到规则引擎基础文案
+   *
+   * @param {string} openId
+   * @returns {Promise<import('../../docs/api-contracts.md').WeeklyReportResponse>}
+   */
+  async getWeeklyReport(openId) {
+    try {
+      // ① 收集上下文
+      const { collectWeeklyContext } = require('../ai/context/weekly-context');
+      const ctx = await collectWeeklyContext(openId, {
+        dailySummaryRepo: this.dailySummaryRepo,
+        sessionRepo: this.sessionRepo,
+        diaryRepo: this.diaryRepo,
+        taskRepo: this.taskRepo,
+        userRepo: this.userRepo,
+      });
+
+      // ② 读取 prompt 模板
+      const template = await this.promptLoader('weekly_report');
+
+      // ③ 构建 messages
+      const { buildWeeklyReportPrompt } = require('../ai/prompts/weekly-report');
+      const messages = buildWeeklyReportPrompt(ctx, template);
+
+      // ④ 调用 AI
+      const result = await this.aiClient.chat(messages, {
+        model: template.model,
+        temperature: template.temperature,
+        max_tokens: template.maxTokens,
+      });
+
+      console.log('[CoachService.getWeeklyReport] AI 调用成功，tokens:', result.usage?.total_tokens);
+
+      // ⑤ 解析 JSON 响应
+      let parsed;
+      try {
+        // 清理可能的 markdown 代码块包裹
+        const jsonStr = result.content
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/```\s*$/, '')
+          .trim();
+        parsed = JSON.parse(jsonStr);
+      } catch (parseErr) {
+        console.warn('[CoachService.getWeeklyReport] AI 返回非 JSON，使用原始文本:', parseErr.message);
+        return {
+          report: result.content.slice(0, 500),
+          highlights: [],
+          suggestion: '',
+          emotionInsight: null,
+          weekSummary: _buildWeekSummary(ctx),
+          generatedBy: 'ai',
+          generatedAt: Date.now(),
+        };
+      }
+
+      return {
+        report: parsed.report || '',
+        highlights: parsed.highlights || [],
+        suggestion: parsed.suggestion || '',
+        emotionInsight: parsed.emotionInsight || null,
+        weekSummary: _buildWeekSummary(ctx),
+        generatedBy: 'ai',
+        generatedAt: Date.now(),
+      };
+    } catch (err) {
+      console.error('[CoachService.getWeeklyReport] AI 调用失败，降级到规则引擎:', err.message);
+      return this._getRuleFallbackReport(openId);
+    }
+  }
+
+  /**
+   * AI 关联分析 — 情绪标签 vs 专注时长的相关性
+   *
+   * P1 实现。收集 30 天数据，按情绪分组统计后交由 AI 解读。
+   *
+   * @param {string} openId
+   * @returns {Promise<object>}
+   */
+  async getCorrelation(openId) {
+    try {
+      // ① 收集上下文
+      const { collectCorrelationContext } = require('../ai/context/correlation-context');
+      const ctx = await collectCorrelationContext(openId, {
+        dailySummaryRepo: this.dailySummaryRepo,
+        diaryRepo: this.diaryRepo,
+        taskRepo: this.taskRepo,
+        userRepo: this.userRepo,
+      });
+
+      // 如果完全没有日记数据，直接返回
+      if (ctx.emotionBreakdown.length === 0) {
+        return {
+          correlations: [],
+          insight: '暂无足够的日记数据进行分析，开始记录每日心情吧！',
+          disclaimer: '需要至少 2 天有情绪标签的日记才能进行关联分析',
+          generatedBy: 'rule',
+          generatedAt: Date.now(),
+          _missing: ctx._missing,
+        };
+      }
+
+      // ② 读取 prompt 模板
+      const template = await this.promptLoader('correlation');
+
+      // ③ 构建 messages
+      const { buildCorrelationPrompt } = require('../ai/prompts/correlation');
+      const messages = buildCorrelationPrompt(ctx, template);
+
+      // ④ 调用 AI
+      const result = await this.aiClient.chat(messages, {
+        model: template.model,
+        temperature: template.temperature,
+        max_tokens: template.maxTokens,
+      });
+
+      // ⑤ 解析
+      let parsed;
+      try {
+        const jsonStr = result.content
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/```\s*$/, '')
+          .trim();
+        parsed = JSON.parse(jsonStr);
+      } catch (parseErr) {
+        console.warn('[CoachService.getCorrelation] AI 返回非 JSON:', parseErr.message);
+        return {
+          correlations: [],
+          insight: result.content.slice(0, 300),
+          disclaimer: '基于近30天数据的统计分析，不构成心理学结论',
+          generatedBy: 'ai',
+          generatedAt: Date.now(),
+          _missing: ctx._missing,
+        };
+      }
+
+      return {
+        correlations: parsed.correlations || [],
+        insight: parsed.insight || '',
+        disclaimer: parsed.disclaimer || '基于近30天数据的统计分析，不构成心理学结论',
+        generatedBy: 'ai',
+        generatedAt: Date.now(),
+        _missing: ctx._missing,
+      };
+    } catch (err) {
+      console.error('[CoachService.getCorrelation] AI 调用失败:', err.message);
+      return {
+        correlations: [],
+        insight: 'AI 分析暂时不可用，请稍后再试',
+        disclaimer: '基于近30天数据的统计分析，不构成心理学结论',
+        generatedBy: 'rule',
+        generatedAt: Date.now(),
+        _missing: [],
+      };
+    }
+  }
+
+  /**
+   * 规则引擎降级周报
+   * AI 调用失败时，用现有评分逻辑拼一段基础文案
+   * @param {string} openId
+   * @returns {Promise<object>}
+   * @private
+   */
+  async _getRuleFallbackReport(openId) {
+    const weekData = await this._getLast7DaysData(openId);
+    const totalMinutes = weekData.reduce((s, d) => s + d.focusMinutes, 0);
+    const totalPomodoros = weekData.reduce((s, d) => s + d.pomodoroCount, 0);
+    const activeDays = weekData.filter(d => d.focusMinutes > 0).length;
+
+    let report;
+    if (totalMinutes === 0) {
+      report = '本周还没有专注记录。打开计时器，完成你的第一个番茄，AI 教练就能为你生成个性化周报啦！';
+    } else if (activeDays >= 5) {
+      report = `本周你一共专注了 ${totalMinutes} 分钟，完成了 ${totalPomodoros} 个番茄，活跃了 ${activeDays} 天。太棒了，保持这个节奏！`;
+    } else {
+      report = `本周你专注了 ${totalMinutes} 分钟，完成了 ${totalPomodoros} 个番茄，活跃了 ${activeDays} 天。试试每周至少 5 天打开专注，习惯的力量超乎想象。`;
+    }
+
+    return {
+      report,
+      highlights: [],
+      suggestion: activeDays < 5 ? '尝试接下来一周每天至少完成 2 个番茄，建立稳定的专注节奏。' : '继续保持！AI 周报生成暂时不可用，规则引擎为你提供了基础总结。',
+      emotionInsight: null,
+      weekSummary: {
+        totalFocusMinutes: totalMinutes,
+        totalPomodoros,
+        activeDays,
+        avgDailyFocus: Math.round(totalMinutes / 7),
+      },
+      generatedBy: 'rule',
+      generatedAt: Date.now(),
+    };
+  }
+
 }
 
 module.exports = CoachService;
+
+// ── 工具函数 ────────────────────────────────────────────────
+
+/**
+ * 从 context 提取 weekSummary
+ * @private
+ */
+function _buildWeekSummary(ctx) {
+  return {
+    totalFocusMinutes: ctx.totalFocusMinutes,
+    totalPomodoros: ctx.totalPomodoros,
+    activeDays: ctx.activeDays,
+    avgDailyFocus: ctx.avgDailyFocus,
+  };
+}
