@@ -127,8 +127,12 @@
       <text class="summary-left">
         已完成 <text class="summary-num-green">{{doneCount}}</text>/{{tasks.length}}
       </text>
-      <text class="summary-right">
-        今日专注 <text class="summary-num-blue">{{totalHours}}h{{totalMins}}m</text>
+      <text class="summary-right" wx:if="{{realStatsLoaded}}">
+        今日专注 <text class="summary-num-blue">{{realTotalHours}}h{{realTotalMins}}m</text>
+        · 🍅 {{realPomodoroCount}}
+      </text>
+      <text class="summary-right summary-right--muted" wx:else>
+        今日专注 <text class="summary-num-blue">--</text>
       </text>
     </view>
 

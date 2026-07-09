@@ -1,4 +1,5 @@
 const taskAPI = require('../../miniprogram/api/task.api');
+const statsAPI = require('../../miniprogram/api/stats.api');
 const { mapTaskToView } = require('../../miniprogram/api/mappers');
 
 const PRIORITY_COLORS = {
@@ -72,6 +73,11 @@ Page({
     errorText: '',
     showTaskModal: false,
     taskForm: createEmptyForm(),
+    // 🆕 真实今日统计数据（来自 stats/today）
+    realTotalHours: 0,
+    realTotalMins: 0,
+    realPomodoroCount: 0,
+    realStatsLoaded: false,
   },
 
   onLoad() {
@@ -82,8 +88,11 @@ Page({
       statusBarHeight,
       capsuleHeight,
       tasks: [],
-    }, () => {
-      this._loadTasks();
+    }, async () => {
+      await Promise.all([
+        this._loadTasks(),
+        this._loadDailyStats(),
+      ]);
       this._updateComputed();
     });
   },
@@ -95,6 +104,10 @@ Page({
 
   onUnload() {
     if (this._hintTimer) clearTimeout(this._hintTimer);
+  },
+
+  onShow() {
+    this._loadDailyStats();
   },
 
   // ─── 筛选参数 ───
@@ -120,6 +133,30 @@ Page({
       wx.showToast({ title: '任务加载失败', icon: 'none' });
     } finally {
       if (!silent) wx.hideLoading();
+    }
+  },
+
+  // 🆕 从 stats/today 获取真实今日专注数据
+  async _loadDailyStats() {
+    try {
+      const res = await statsAPI.today();
+      if (res.code === 0 && res.data) {
+        const data = res.data;
+        const focusMinutes = data.focusMinutes || 0;
+        const pomodoroCount = data.pomodoroCount || 0;
+
+        this.setData({
+          realTotalHours: Math.floor(focusMinutes / 60),
+          realTotalMins: focusMinutes % 60,
+          realPomodoroCount: pomodoroCount,
+          realStatsLoaded: true,
+        });
+      } else {
+        console.warn('stats/today 返回异常:', res);
+      }
+    } catch (err) {
+      console.error('加载今日统计数据失败', err);
+      // 静默失败，realStatsLoaded 保持 false → WXML 显示 "--"
     }
   },
 

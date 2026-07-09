@@ -384,6 +384,10 @@
   color: #8A8A9A;
 }
 
+.summary-right--muted {
+  opacity: 0.5;
+}
+
 .summary-num-green {
   color: #34C759;
   font-weight: 600;

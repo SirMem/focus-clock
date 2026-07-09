@@ -16,6 +16,8 @@ const {
   TASK_LIMITS,
 } = require('../config');
 
+const { getDateStr } = require('../utils/helpers');
+
 const UPDATABLE_FIELDS = [
   'title',
   'description',
@@ -37,16 +39,22 @@ class TaskValidationError extends Error {
 }
 
 class TaskService {
-  constructor(taskRepo) {
+  /**
+   * @param {import('../repositories/task.repo')} taskRepo
+   * @param {import('../repositories/daily-summary.repo')} dailySummaryRepo
+   */
+  constructor(taskRepo, dailySummaryRepo) {
     this.taskRepo = taskRepo;
+    this.dailySummaryRepo = dailySummaryRepo;
   }
 
   /**
-   * 工厂方法 —— 内部自动初始化 TaskRepo
+   * 工厂方法 —— 内部自动初始化 TaskRepo + DailySummaryRepo
    */
   static create() {
     const TaskRepo = require('../repositories/task.repo');
-    return new TaskService(TaskRepo.create());
+    const DailySummaryRepo = require('../repositories/daily-summary.repo');
+    return new TaskService(TaskRepo.create(), DailySummaryRepo.create());
   }
 
   /**
@@ -123,7 +131,26 @@ class TaskService {
     const now = Date.now();
     const updateData = this._normalizeUpdateInput(data, existing, now);
 
-    return this.taskRepo.updateById(id, updateData);
+    const result = await this.taskRepo.updateById(id, updateData);
+
+    // [PRD] 任务刚被标记完成 → 同步到 daily_summaries
+    // _normalizeUpdateInput 已在 false→true 时设置 completedAt=now，此处复用同一条件
+    // [BDD 场景2] 只有 isDone 从 false→true 时才触发，防止重复计数
+    const becameDone = data.isDone === true && !existing.isDone;
+    if (becameDone) {
+      try {
+        const today = getDateStr();
+        await this.dailySummaryRepo.upsert(openId, today, {
+          completedTasks: 1,  // 原子 +1（已有记录走 _.inc()，新记录走初始值）
+        });
+      } catch (err) {
+        // 部分写入容错：task 已更新但 daily_summaries 写入失败
+        // 策略：仅记录日志，不 revert task（微信云数据库无事务支持）
+        console.error('[TaskService.updateTask] daily_summaries upsert 失败，completedTasks 丢失 +1:', err.message);
+      }
+    }
+
+    return result;
   }
 
   /**
