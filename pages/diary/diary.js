@@ -17,7 +17,11 @@ const AI_PROMPTS = [
 const diaryAPI = require('../../miniprogram/api/diary.api');
 const taskAPI = require('../../miniprogram/api/task.api');
 const statsAPI = require('../../miniprogram/api/stats.api');
-const { mapDiaryToView, mapEmotionToCanonical } = require('../../miniprogram/api/mappers');
+const {
+  mapDiaryToView,
+  mapEmotionToCanonical,
+  formatDiaryDate,
+} = require('../../miniprogram/api/mappers');
 
 Page({
   data: {
@@ -59,19 +63,18 @@ Page({
   },
 
   async _loadEntries() {
-    wx.showLoading({ title: '加载中...' });
     try {
       const res = await diaryAPI.list({ pageSize: 50 });
-      wx.hideLoading();
       if (res.code === 0) {
-        const diaries = (res.data && res.data.diaries) || [];
+        // 后端返回 res.data.diaries，diary.api.list 做兼容映射同时提供 entries
+        const diaries = (res.data && (res.data.diaries || res.data.entries)) || [];
         const historyEntries = diaries.map(mapDiaryToView);
         this.setData({ historyEntries });
       } else {
         wx.showToast({ title: '日记加载失败', icon: 'none' });
       }
     } catch (err) {
-      wx.hideLoading();
+      console.error('加载日记列表失败', err);
       wx.showToast({ title: '日记加载失败', icon: 'none' });
     }
   },
@@ -84,6 +87,7 @@ Page({
       ]);
 
       if (tasksRes.code !== 0 || statsRes.code !== 0) {
+        console.warn('摘要加载失败', { tasksRes, statsRes });
         wx.showToast({ title: '摘要加载失败', icon: 'none' });
         return;
       }
@@ -130,7 +134,7 @@ Page({
       const res = await diaryAPI.create({
         content,
         emotionTags: [mapEmotionToCanonical(this.data.selectedEmotion)],
-        tasks: [],
+        tasks: this.data.todayTasks.map(t => t.id),
       });
       wx.hideLoading();
       if (res.code === 0) {
@@ -142,33 +146,44 @@ Page({
       }
     } catch (err) {
       wx.hideLoading();
+      console.error('保存日记失败', err);
       wx.showToast({ title: '保存失败', icon: 'none' });
     }
   },
 
   onPhotoTap() {
-    wx.showToast({ title: '拍照功能', icon: 'none' });
+    wx.showToast({ title: '拍照功能开发中，敬请期待', icon: 'none' });
   },
 
   onVoiceTap() {
-    wx.showToast({ title: '语音输入', icon: 'none' });
+    wx.showToast({ title: '语音输入开发中，敬请期待', icon: 'none' });
   },
 
   onViewAll() {
-    wx.showToast({ title: '查看全部历史', icon: 'none' });
+    wx.showToast({ title: '历史记录页面开发中', icon: 'none' });
   },
 
   onHistoryTap(e) {
     const id = e.currentTarget.dataset.id;
     const entry = this.data.historyEntries.find(item => item.id === id);
     if (entry) {
-      wx.showToast({ title: entry.title || entry.preview, icon: 'none' });
-    } else {
-      wx.showToast({ title: '日记详情', icon: 'none' });
+      // 弹窗预览日记全文
+      wx.showModal({
+        title: entry.date || '日记详情',
+        content: entry.content || entry.preview || '暂无内容',
+        showCancel: false,
+        confirmText: '关闭',
+      });
     }
   },
 
   onMenuTap() {
-    wx.showToast({ title: '更多功能', icon: 'none' });
+    wx.showActionSheet({
+      itemList: ['按日期筛选', '按心情筛选'],
+      success(res) {
+        const action = res.tapIndex === 0 ? '日期筛选' : '心情筛选';
+        wx.showToast({ title: `${action}功能开发中`, icon: 'none' });
+      },
+    });
   },
 });
