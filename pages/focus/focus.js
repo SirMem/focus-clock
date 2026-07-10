@@ -1,6 +1,7 @@
 const sessionAPI = require('../../miniprogram/api/session.api');
 const taskAPI = require('../../miniprogram/api/task.api');
 const statsAPI = require('../../miniprogram/api/stats.api');
+const coachAPI = require('../../miniprogram/api/coach.api');
 const { mapTaskToView, formatDuration } = require('../../miniprogram/api/mappers');
 
 const DURATIONS = {
@@ -23,14 +24,7 @@ const MODE_LABELS = {
 
 const STORAGE_KEY = 'pomodoro_state';
 
-const AI_TIPS = [
-  '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。',
-  '研究表明，短暂休息能提升大脑效率47%。加油，你做得很棒！',
-  '今日已完成3个番茄，专注度比昨天提升了12%。继续保持！',
-  '下一个番茄建议专注在最重要的任务上，优先级是成功的关键。',
-  '你已连续专注18分钟，坚持就是胜利！休息时记得喝水。',
-  '环境整洁能提升专注力。利用休息时间整理一下桌面吧。',
-];
+const DEFAULT_TIP = '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。';
 
 const SOUNDS = [
   { id: 'none', label: '🔇 无音效' },
@@ -62,8 +56,8 @@ Page({
     availableTasks: [],
     showTaskPicker: false,
     currentSound: 'none',
-    currentTip: AI_TIPS[0],
-    tipIndex: 0,
+    currentTip: DEFAULT_TIP,
+    aiGeneratedBy: '',  // 'ai' | 'rule' | 'fallback'
 
     // P0-2: 防重复提交
     completing: false,
@@ -108,6 +102,7 @@ Page({
     await Promise.all([
       this._loadTodayStats(),
       this._loadAvailableTasks(),
+      this._loadCoachData(),
     ]);
   },
 
@@ -189,6 +184,24 @@ Page({
       }
     } catch (err) {
       console.error('加载今日统计失败', err);
+    }
+  },
+
+  // ===== AI 教练卡片 =====
+  async _loadCoachData() {
+    console.log('[AICard] _loadCoachData 被调用');
+    try {
+      const res = await coachAPI.smartTip();
+      console.log('[AICard] smartTip 返回:', JSON.stringify(res));
+      if (res.code === 0 && res.data) {
+        this.setData({
+          currentTip: res.data.tip,
+          aiGeneratedBy: res.data.generatedBy || '',
+        });
+      }
+    } catch (err) {
+      console.warn('[AICard] smartTip 调用失败:', err);
+      // 保持现有 tip 不变，不崩溃
     }
   },
 
@@ -345,10 +358,9 @@ Page({
         this._loadTodayStats(),
         this._loadAvailableTasks(),
       ]);
-      // 成功完成一轮后推进 AI 提示语
+      // 成功完成一轮后刷新 AI 建议
       if (isFocus) {
-        const tipIndex = (this.data.tipIndex + 1) % AI_TIPS.length;
-        this.setData({ currentTip: AI_TIPS[tipIndex], tipIndex });
+        this._loadCoachData();
       }
     } catch (err) {
       console.error('Failed to record session', err);
@@ -478,6 +490,41 @@ Page({
 
   onMenuTap() {
     wx.showToast({ title: '设置', icon: 'none' });
+  },
+
+  // 🧪 测试：直接调用 session/complete
+  async onTestComplete() {
+    wx.showLoading({ title: '测试中...' });
+    try {
+      const res = await sessionAPI.complete('focus', 25 * 60, {
+        taskId: this.data.selectedTaskId || undefined,
+        completedPomodoro: true,
+        idempotencyKey: `test_${Date.now()}`,
+      });
+      wx.hideLoading();
+      console.log('[TEST] session/complete 返回:', JSON.stringify(res));
+      // 成功后刷新统计数据
+      if (res.code === 0) {
+        await Promise.all([
+          this._loadTodayStats(),
+          this._loadAvailableTasks(),
+          this._loadCoachData(),
+        ]);
+      }
+      wx.showModal({
+        title: res.code === 0 ? '测试成功' : '测试失败',
+        content: JSON.stringify(res, null, 2),
+        showCancel: false,
+      });
+    } catch (err) {
+      wx.hideLoading();
+      console.error('[TEST] session/complete 异常:', err);
+      wx.showModal({
+        title: '测试异常',
+        content: JSON.stringify({ message: err.message, ...err }, null, 2),
+        showCancel: false,
+      });
+    }
   },
 
   onTabTap(e) {

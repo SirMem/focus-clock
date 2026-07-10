@@ -449,6 +449,95 @@ class CoachService {
   }
 
   /**
+   * AI 智能建议 — 基于本周专注数据 + LLM 生成个性化提示
+   *
+   * 复用 _getLast7DaysData（仅需 dailySummaryRepo），不引入 5-repo 的 collectWeeklyContext。
+   * 降级链：LLM → getTip() 规则引擎 → 硬编码兜底
+   *
+   * @param {string} openId
+   * @returns {Promise<{tip: string, generatedBy: 'ai'|'rule'|'fallback'}>}
+   */
+  async getSmartTip(openId) {
+    try {
+      // ① 获取本周数据（已有方法，一次范围查询）
+      const weekData = await this._getLast7DaysData(openId);
+      const totalPomodoros = weekData.reduce((s, d) => s + d.pomodoroCount, 0);
+      const totalFocusMinutes = weekData.reduce((s, d) => s + d.focusMinutes, 0);
+      const activeDays = weekData.filter(d => d.focusMinutes > 0).length;
+
+      // 今日数据
+      const todayStr = getDateStr();
+      const todayData = weekData.find(d => d.date === todayStr) || { pomodoroCount: 0, focusMinutes: 0 };
+
+      // 用户设置
+      const user = await this.userRepo.findByOpenId(openId);
+      const dailyGoal = user?.settings?.dailyGoal || 4;
+
+      // ② 构建 prompt
+      const systemPrompt = `你是一个专注力教练。根据用户的专注数据，给出一句 10-30 字的简短、鼓励性建议。
+回复必须是纯 JSON，不要 markdown 标记：
+{"tip": "建议文案"}
+
+规则：
+- 表现好（日均番茄 >= 目标）：给予表扬，建议挑战更高
+- 表现一般：给出具体可操作的小改进建议
+- 今日 0 番茄：鼓励从第一个番茄开始
+- 口语化、温暖，禁止使用"根据您的数据"这类 AI 味表达`;
+
+      const userPrompt = `本周数据：
+- 总番茄数：${totalPomodoros} 个
+- 总专注分钟：${totalFocusMinutes} 分钟
+- 活跃天数：${activeDays}/7
+- 今日番茄：${todayData.pomodoroCount} 个
+- 今日目标：${dailyGoal} 个
+- 日均番茄：${Math.round(totalPomodoros / 7)} 个
+
+请给我一句简短的专注建议。`;
+
+      // ③ 调用 LLM
+      const result = await this.aiClient.chat({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 100,
+      });
+
+      console.log('[CoachService.getSmartTip] AI 调用成功，tokens:', result.usage?.total_tokens);
+
+      // ④ 解析（兼容 markdown code fence）
+      let content = result.content.trim();
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('LLM 返回无 JSON');
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      return { tip: parsed.tip || '继续保持专注的节奏！', generatedBy: 'ai' };
+    } catch (err) {
+      console.warn('[CoachService.getSmartTip] LLM 失败，降级规则引擎:', err.message);
+      return this._fallbackSmartTip(openId);
+    }
+  }
+
+  /**
+   * 降级：规则引擎 → 硬编码
+   * @param {string} openId
+   * @returns {Promise<{tip: string, generatedBy: 'rule'|'fallback'}>}
+   * @private
+   */
+  async _fallbackSmartTip(openId) {
+    try {
+      const result = await this.getTip(openId);
+      return { tip: result.tip, generatedBy: 'rule' };
+    } catch (err) {
+      return {
+        tip: '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。',
+        generatedBy: 'fallback',
+      };
+    }
+  }
+
+  /**
    * 规则引擎降级周报
    * AI 调用失败时，用现有评分逻辑拼一段基础文案
    * @param {string} openId

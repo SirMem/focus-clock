@@ -539,25 +539,172 @@
   color: #8A8A9A;
 }
 
-/* ===== Empty states ===== */
+/* ════════════════════════════════════════════════════
+   🆕 AI 周报卡片
+   ════════════════════════════════════════════════════ */
+
+/* AI 生成标记徽章 */
+.ai-badge {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  background: linear-gradient(135deg, #8B5CF6, #6366F1);
+  border-radius: 8rpx;
+}
+.ai-badge-text {
+  font-size: 18rpx;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* AI 周报卡片 */
+.ai-report-card {
+  margin: 24rpx 32rpx;
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(139, 92, 246, 0.08);
+  border: 2rpx solid rgba(139, 92, 246, 0.12);
+}
+
+.ai-report-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.ai-report-icon {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+}
+
+.ai-report-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  flex: 1;
+}
+
+.ai-generated-badge {
+  padding: 4rpx 16rpx;
+  background: linear-gradient(135deg, #8B5CF6, #6366F1);
+  border-radius: 16rpx;
+}
+.ai-generated-text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+.ai-rule-badge {
+  padding: 4rpx 16rpx;
+  background: #F0F2F5;
+  border-radius: 16rpx;
+}
+.ai-rule-text {
+  font-size: 20rpx;
+  color: #8A8A9A;
+  font-weight: 500;
+}
+
+.ai-report-body {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 44rpx;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+/* 情绪关联区 */
+.ai-emotion-section {
+  padding: 24rpx;
+  background: #F8F7FF;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.ai-emotion-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.ai-emotion-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.ai-emotion-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #6366F1;
+}
+
+.ai-emotion-text {
+  font-size: 26rpx;
+  color: #555;
+  line-height: 40rpx;
+}
+
+/* AI 亮点区 */
+.ai-highlights-section {
+  padding-top: 24rpx;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.ai-highlights-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8A8A9A;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.ai-highlights-list {
+  display: flex;
+  gap: 16rpx;
+}
+
+.ai-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+  background: #F8F7FF;
+  border-radius: 20rpx;
+}
+
+.ai-highlight-emoji {
+  font-size: 28rpx;
+}
+
+.ai-highlight-label {
+  font-size: 24rpx;
+  color: #6366F1;
+  font-weight: 500;
+}
+
+/* AI 报告加载态 */
+.ai-report-loading {
+  margin: 24rpx 32rpx;
+  padding: 48rpx 32rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  text-align: center;
+}
+
+.ai-report-loading-text {
+  font-size: 26rpx;
+  color: #C0C4CC;
+}
+
+/* 空态周报图表 */
 .weekly-chart-empty {
-  height: 256rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 200rpx;
+  font-size: 24rpx;
+  color: #C0C4CC;
+  text-align: center;
   padding: 0 32rpx;
-  color: #8A8A9A;
-  font-size: 24rpx;
-  text-align: center;
-}
-
-.history-suggestions-empty {
-  padding: 48rpx 32rpx;
-  text-align: center;
-}
-
-.history-empty-text {
-  font-size: 24rpx;
-  color: #8A8A9A;
-  line-height: 1.6;
 }

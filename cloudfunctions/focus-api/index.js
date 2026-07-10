@@ -55,8 +55,24 @@ exports.main = async (event, context) => {
       } else if (err && err.code === 'RESOURCE_NOT_FOUND') {
         ctx.body = { code: 404, message: '请求的资源不存在' };
       } else {
-        console.error('[Unhandled Error]', err);
-        ctx.body = { code: -1, message: '服务器内部错误' };
+        // ── 未预期错误 → 返回详细异常信息，便于排查
+        const errMsg = err && err.message ? err.message : String(err);
+        const errStack = err && err.stack ? err.stack : '';
+        console.error('[Unhandled Error]', errMsg, '\n' + errStack);
+        ctx.body = {
+          code: -1,
+          message: '服务器内部错误',
+          error: {
+            type: (err && err.constructor && err.constructor.name) || 'Unknown',
+            message: errMsg,
+            // 仅返回 server 侧调用帧，剥离 node_modules
+            stack: errStack
+              .split('\n')
+              .filter(line => line.includes('focus-api') && !line.includes('node_modules'))
+              .map(s => s.trim())
+              .slice(0, 8),
+          },
+        };
       }
     }
   });

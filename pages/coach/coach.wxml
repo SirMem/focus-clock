@@ -40,13 +40,18 @@
       </view>
     </view>
 
-    <!-- ===== 趋势洞察 ===== -->
+    <!-- ===== 🆕 AI 趋势洞察（区域：AI 报告） ===== -->
     <view class="insight-card">
       <view class="insight-header">
         <text class="insight-icon">📊</text>
         <text class="insight-title">趋势洞察</text>
+        <view wx:if="{{reportGeneratedBy === 'ai'}}" class="ai-badge">
+          <text class="ai-badge-text">AI</text>
+        </view>
       </view>
-      <text class="insight-text">{{suggestionText || '开始你的第一个专注，让教练更了解你'}}</text>
+      <text class="insight-text">
+        {{insightText || '开始你的第一个专注，让教练更了解你'}}
+      </text>
       <!-- Sparkline -->
       <view class="sparkline-wrap">
         <view class="sparkline">
@@ -72,6 +77,41 @@
       <view class="sparkline-footer">
         <text class="sparkline-label">本周趋势</text>
         <text class="sparkline-up">专注中</text>
+      </view>
+    </view>
+
+    <!-- ===== 🆕 AI 周报详情卡片 ===== -->
+    <view class="ai-report-card" wx:if="{{aiReport}}">
+      <view class="ai-report-header">
+        <text class="ai-report-icon">🤖</text>
+        <text class="ai-report-title">AI 周报</text>
+        <view wx:if="{{reportGeneratedBy === 'ai'}}" class="ai-generated-badge">
+          <text class="ai-generated-text">AI 生成</text>
+        </view>
+        <view wx:else class="ai-rule-badge">
+          <text class="ai-rule-text">基础总结</text>
+        </view>
+      </view>
+      <text class="ai-report-body">{{aiReport}}</text>
+
+      <!-- 情绪关联 -->
+      <view wx:if="{{aiEmotionInsight}}" class="ai-emotion-section">
+        <view class="ai-emotion-header">
+          <text class="ai-emotion-icon">🔍</text>
+          <text class="ai-emotion-label">情绪关联发现</text>
+        </view>
+        <text class="ai-emotion-text">{{aiEmotionInsight}}</text>
+      </view>
+
+      <!-- AI 亮点 -->
+      <view wx:if="{{aiHighlights.length > 0}}" class="ai-highlights-section">
+        <text class="ai-highlights-title">本周亮点</text>
+        <view class="ai-highlights-list">
+          <view wx:for="{{aiHighlights}}" wx:key="index" class="ai-highlight-item">
+            <text class="ai-highlight-emoji">{{item.icon}}</text>
+            <text class="ai-highlight-label">{{item.label}}</text>
+          </view>
+        </view>
       </view>
     </view>
 

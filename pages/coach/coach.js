@@ -37,10 +37,7 @@ function buildWeeklyTrend(dailyBreakdown) {
 function buildWeeklyStats(weekly) {
   if (!weekly) return [];
   return [
-    {
-      label: '总时长',
-      value: formatDuration(weekly.totalFocusMinutes || 0),
-    },
+    { label: '总时长', value: formatDuration(weekly.totalFocusMinutes || 0) },
     { label: '完成番茄', value: `${weekly.totalPomodoros || 0} 个` },
     { label: '活跃天数', value: `${weekly.activeDays || 0}/7 天` },
   ];
@@ -63,6 +60,20 @@ function buildAchievements(insights) {
     }));
 }
 
+/**
+ * 将 AI 报告的 highlights 转为成就展示（优先级高于规则引擎 insights）
+ */
+function buildAIHighlights(highlights) {
+  if (!Array.isArray(highlights) || highlights.length === 0) return [];
+  return highlights.slice(0, 3).map(h => ({
+    icon: h.emoji || '💡',
+    label: h.text.slice(0, 8),
+    value: '',
+    color: '#FF6B35',
+    bgColor: '#FFF0EB',
+  }));
+}
+
 Page({
   data: {
     statusBarHeight: 44,
@@ -80,6 +91,14 @@ Page({
     weeklyStats: [],
     achievements: [],
     coachingHistory: [],
+
+    // 🆕 AI 周报
+    aiReport: '',
+    aiHighlights: [],
+    aiSuggestion: '',
+    aiEmotionInsight: '',
+    reportGeneratedBy: '',       // 'ai' | 'rule'
+    aiReportLoading: false,
   },
 
   onLoad() {
@@ -90,29 +109,55 @@ Page({
   },
 
   async _loadCoachData() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, aiReportLoading: true });
     try {
-      const [scoreRes, tipRes, weeklyRes] = await Promise.all([
+      const [scoreRes, tipRes, weeklyRes, reportRes] = await Promise.all([
         coachAPI.score(),
         coachAPI.tip(),
         statsAPI.weekly(),
+        coachAPI.weeklyReport(),
       ]);
 
       const scoreData = extractData(scoreRes, null);
       const tipData = extractData(tipRes, null);
       const weeklyData = extractData(weeklyRes, null);
+      const reportData = extractData(reportRes, null);
 
       const didFail = !scoreData || !tipData || !weeklyData;
+
+      // ── AI 报告数据 ──
+      const aiReport = reportData ? reportData.report || '' : '';
+      const aiHighlights = reportData ? buildAIHighlights(reportData.highlights) : [];
+      const aiSuggestion = reportData ? (reportData.suggestion || '') : '';
+      const aiEmotionInsight = reportData ? (reportData.emotionInsight || '') : '';
+      const reportGeneratedBy = reportData ? (reportData.generatedBy || 'rule') : 'rule';
+
+      // ── 成就优先使用 AI highlights，fallback 到规则引擎 insights ──
+      const achievements = aiHighlights.length > 0
+        ? aiHighlights
+        : buildAchievements(scoreData ? scoreData.insights : []);
+
+      // ── 趋势洞察文案优先用 AI 报告开头，fallback 到规则引擎 tip ──
+      const insightText = aiReport
+        ? aiReport.slice(0, 120) + (aiReport.length > 120 ? '...' : '')
+        : (tipData ? tipData.tip : '');
 
       this.setData({
         score: scoreData ? scoreData.score : 0,
         level: scoreData ? scoreData.level : '新手',
-        suggestionText: tipData ? tipData.tip : '',
+        suggestionText: aiSuggestion || (tipData ? tipData.tip : ''),
         weeklyTrend: weeklyData ? buildWeeklyTrend(weeklyData.dailyBreakdown) : [],
         weeklyStats: weeklyData ? buildWeeklyStats(weeklyData) : [],
-        achievements: scoreData ? buildAchievements(scoreData.insights) : [],
+        achievements,
         coachingHistory: [],
+        aiReport,
+        aiHighlights,
+        aiSuggestion,
+        aiEmotionInsight,
+        reportGeneratedBy,
+        insightText,
         loading: false,
+        aiReportLoading: false,
       });
 
       if (didFail) {
@@ -121,7 +166,7 @@ Page({
     } catch (err) {
       console.error('[coach] 加载教练数据失败', err);
       wx.showToast({ title: '加载教练数据失败', icon: 'none' });
-      this.setData({ loading: false });
+      this.setData({ loading: false, aiReportLoading: false });
     }
   },
 

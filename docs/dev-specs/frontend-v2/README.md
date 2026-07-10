@@ -159,6 +159,9 @@ pages/profile/profile
 | `07-login-fix.md` | Login 基础库 3.7.12 适配 | 🚧 新增，待执行 |
 | `08-todo-ux-fix.md` | Todo FAB 功能修复 | 🚧 新增，待执行 |
 | `09-coach-p0.md` | Coach P0 实现 | 🚧 新增，待执行 |
+| `10-coach-ai.md` | Coach AI 增强（周报+关联分析） | 📋 Spec 已冻结，待实现 |
+| `11-completed-task-fix.md` | 修复 daily_summaries.completedTasks 缺失写入 & todo 页标签 | 🚧 新增，待执行 |
+| `12-ai-card-enhancement.md` | Focus 页 AI 卡片数据驱动升级（P0 规则引擎 + P1 LLM） | 🚧 新增，待执行 |
 
 ---
 

@@ -185,7 +185,7 @@ Page({
     summaryCards: [
       { icon: '⏱', value: '0m', label: '专注时长', isUp: true, trend: '—' },
       { icon: '🍅', value: '0 个', label: '完成番茄', isUp: true, trend: '—' },
-      { icon: '✅', value: '0%', label: '完成率', isUp: false, trend: '—' },
+      { icon: '✅', value: '0%', label: '本月出勤率', isUp: false, trend: '—' },
     ],
 
     focusPercent: 0,
@@ -274,7 +274,7 @@ Page({
     const summaryCards = [
       { icon: '⏱', value: formatDuration(focusMinutes), label: '专注时长', isUp: true, trend: '—' },
       { icon: '🍅', value: `${pomodoroCount} 个`, label: '完成番茄', isUp: true, trend: '—' },
-      { icon: '✅', value: `${Math.round(completionRate * 100)}%`, label: '完成率', isUp: false, trend: '—' },
+      { icon: '✅', value: `${Math.round(completionRate * 100)}%`, label: '本月出勤率', isUp: false, trend: '—' },
     ];
 
     this.setData({ summaryCards });

@@ -1,1 +1,1 @@
-{"_openid": "o0x_sample_user_001", "nickName": "张三", "avatarUrl": "https://example.com/avatar1.png", "createdAt": 1718000000000, "updatedAt": 1718000000000, "lastLoginAt": 1718000000000, "settings": {"focusDuration": 25, "shortBreak": 5, "longBreak": 15, "dailyGoal": 4}}
+{"_id": "o0x_sample_user_001", "_openid": "o0x_sample_user_001", "nickName": "张三", "avatarUrl": "https://example.com/avatar1.png", "createdAt": 1782201600000, "updatedAt": 1782201600000, "lastLoginAt": 1782720000000, "settings": {"focusDuration": 25, "shortBreak": 5, "longBreak": 15, "dailyGoal": 4}}

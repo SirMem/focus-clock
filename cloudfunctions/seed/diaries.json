@@ -1,0 +1,4 @@
+{"_id": "diary_001", "_openid": "o0x_sample_user_001", "content": "今天开始复习高数第三章，极限部分还需要多花时间理解。下午写了一些项目文档的初稿，还不太完善。", "emotionTags": ["平静"], "tasks": ["sample_task_001", "sample_task_002"], "createdAt": 1782282600000, "updatedAt": 1782282600000}
+{"_id": "diary_002", "_openid": "o0x_sample_user_001", "content": "今天专注表现不错，连续完成了4个番茄钟。买了生活用品，顺便出去走了走。", "emotionTags": ["开心", "平静"], "tasks": ["sample_task_003"], "createdAt": 1782536400000, "updatedAt": 1782536400000}
+{"_id": "diary_003", "_openid": "o0x_sample_user_001", "content": "今天背了30个托福单词，感觉词汇量在慢慢积累。项目文档的接口部分基本写完了，明天继续。", "emotionTags": ["兴奋"], "tasks": ["sample_task_004", "sample_task_002"], "createdAt": 1782627300000, "updatedAt": 1782627300000}
+{"_id": "diary_004", "_openid": "o0x_sample_user_001", "content": "有点疲惫，今天虽然完成了5个番茄但是效率不高。周末了，晚上早点休息。", "emotionTags": ["疲惫"], "tasks": [], "createdAt": 1782711900000, "updatedAt": 1782711900000}

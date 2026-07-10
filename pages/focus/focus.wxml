@@ -112,9 +112,18 @@
       <view class="ai-header">
         <view class="ai-avatar">AI</view>
         <text class="ai-title">AI 教练</text>
-        <view class="ai-badge">智能建议</view>
+        <view class="ai-badge {{aiGeneratedBy === 'ai' ? 'ai-badge-ai' : aiGeneratedBy === 'rule' ? 'ai-badge-rule' : ''}}">
+          <block wx:if="{{aiGeneratedBy === 'ai'}}">AI 建议</block>
+          <block wx:elif="{{aiGeneratedBy === 'rule'}}">智能建议</block>
+          <block wx:else>专注指南</block>
+        </view>
       </view>
       <text class="ai-tip">{{currentTip}}</text>
+    </view>
+
+    <!-- 🧪 测试按钮：直接调用 session/complete -->
+    <view class="test-section" bind:tap="onTestComplete">
+      <text class="test-label">🧪 测试 session/complete</text>
     </view>
 
     <view class="bottom-scroll-space"></view>

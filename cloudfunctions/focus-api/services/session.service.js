@@ -65,10 +65,14 @@ class SessionService {
     const startedAt = completedAt - duration * 1000;
     const isPomodoro = mode === 'focus' && completedPomodoro !== false;
 
+    console.log('[Session.complete] 开始处理', { openId, mode, duration, taskId, isPomodoro, idempotencyKey });
+
     // ── 0. P0-2: 幂等键防重复 ──
     if (idempotencyKey) {
+      console.log('[Session.complete] 步骤0: 幂等键检查');
       const existing = await this.sessionRepo.findByIdempotencyKey(openId, idempotencyKey);
       if (existing) {
+        console.log('[Session.complete] 步骤0: 命中幂等键，直接返回已有记录');
         const todaySessions = await this.sessionRepo.getTodaySessions(openId);
         return {
           session: existing,
@@ -91,26 +95,34 @@ class SessionService {
       createdAt: now,
     };
 
+    console.log('[Session.complete] 步骤1: 插入 session 记录', sessionRecord);
     const created = await this.sessionRepo.insert(sessionRecord);
+    console.log('[Session.complete] 步骤1: 插入成功, _id =', created._id);
 
     // ── 2-3. 更新日汇总 + 任务（P0-1: 补偿模式） ──
     try {
       if (isPomodoro) {
         const dateStr = getDateStr();
+        console.log('[Session.complete] 步骤2: upsert 日汇总', { openId, dateStr, focusMinutes: Math.round(duration / 60), pomodoroCount: 1 });
         await this.dailySummaryRepo.upsert(openId, dateStr, {
           focusMinutes: Math.round(duration / 60),
           pomodoroCount: 1,
         });
+        console.log('[Session.complete] 步骤2: 日汇总 upsert 成功');
       }
 
       let task = null;
       if (taskId) {
+        console.log('[Session.complete] 步骤3: 递增任务 pomodoro', { taskId });
         task = await this._incrementTaskPomodoros(taskId, openId);
+        console.log('[Session.complete] 步骤3: 任务递增完成', task);
       }
 
       // ── 4. 当日累计统计 ──
+      console.log('[Session.complete] 步骤4: 查询当日 sessions');
       const todaySessions = await this.sessionRepo.getTodaySessions(openId);
       const todayStats = this._calcTodayStats(todaySessions);
+      console.log('[Session.complete] 步骤4: 统计完成', todayStats);
 
       return {
         session: created,
@@ -120,6 +132,7 @@ class SessionService {
     } catch (err) {
       // P0-1: 补偿——删除已插入的 session，保证数据一致性
       console.error('[SessionService.completeSession] 部分写入失败，执行补偿删除:', err.message);
+      console.error('[SessionService.completeSession] 详细错误:', err);
       await this.sessionRepo.deleteById(created._id);
       throw err;
     }
