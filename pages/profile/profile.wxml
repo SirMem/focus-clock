@@ -546,12 +546,101 @@
        子视图：帮助与反馈
        ============================================================ -->
   <block wx:if="{{currentView === 'help'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">💬</text>
-        <text class="placeholder-title">帮助与反馈</text>
-        <text class="placeholder-desc">常见问题解答和意见反馈</text>
+    <view class="sub-view help-sub-view">
+
+      <!-- 快捷入口 -->
+      <view class="help-quick-grid">
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="使用指南">
+          <text class="help-quick-icon">📖</text>
+          <text class="help-quick-label">使用指南</text>
+        </view>
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="视频教程">
+          <text class="help-quick-icon">🎬</text>
+          <text class="help-quick-label">视频教程</text>
+        </view>
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="在线客服">
+          <text class="help-quick-icon">💬</text>
+          <text class="help-quick-label">在线客服</text>
+        </view>
       </view>
+
+      <!-- 常见问题 -->
+      <view class="help-faq-card">
+        <text class="help-faq-section-title">常见问题</text>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{0}}">
+            <text class="help-faq-q">番茄工作法是什么？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 0 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 0}}" class="help-faq-answer">
+            <text>番茄工作法是一种时间管理方法，以 25 分钟专注工作 + 5 分钟短休息为一个循环，每完成 4 个番茄后进行 15-30 分钟的长休息。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{1}}">
+            <text class="help-faq-q">如何修改专注时长？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 1 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 1}}" class="help-faq-answer">
+            <text>进入「我的」→「个人目标」，在计时器设置中可以自定义专注时长（15/20/25/30/45/60 分钟）。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{2}}">
+            <text class="help-faq-q">AI 教练如何生成建议？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 2 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 2}}" class="help-faq-answer">
+            <text>AI 教练会分析你的专注历史、任务完成率、高效时段等数据，结合番茄工作法原则，每日生成个性化建议。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{3}}">
+            <text class="help-faq-q">数据会保存到云端吗？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 3 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 3}}" class="help-faq-answer">
+            <text>登录后所有数据自动同步到云端，更换设备后重新登录即可恢复所有记录。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{4}}">
+            <text class="help-faq-q">如何开启白噪音？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 4 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 4}}" class="help-faq-answer">
+            <text>在专注页面，点击右下角的音效按钮，选择喜欢的白噪音类型，音量可单独调节。</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 意见反馈 -->
+      <view class="help-feedback-card">
+        <text class="help-faq-section-title">意见反馈</text>
+        <view class="help-feedback-input-wrap">
+          <textarea
+            class="help-feedback-textarea"
+            placeholder="描述你遇到的问题或建议..."
+            placeholder-style="color:#C0C4CC;font-size:26rpx"
+            value="{{feedbackText}}"
+            bindinput="onFeedbackInput"
+            maxlength="{{feedbackMax}}"
+            auto-height
+          />
+          <view class="help-feedback-footer">
+            <text class="help-feedback-count">{{feedbackText.length}}/{{feedbackMax}}</text>
+          </view>
+        </view>
+        <view
+          class="help-feedback-btn {{feedbackSent ? 'feedback-btn-done' : (feedbackText.trim().length > 0 ? 'feedback-btn-ready' : '')}}"
+          bind:tap="onFeedbackSubmit"
+        >
+          <text wx:if="{{feedbackSent}}">✓ 反馈已提交，感谢！</text>
+          <text wx:else>提交反馈</text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 
@@ -559,12 +648,65 @@
        子视图：关于 & 评分
        ============================================================ -->
   <block wx:if="{{currentView === 'about'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">ℹ️</text>
-        <text class="placeholder-title">关于 & 评分</text>
-        <text class="placeholder-desc">查看应用信息和评分</text>
+    <view class="sub-view about-sub-view">
+
+      <view class="about-identity-section">
+        <view class="about-app-icon">
+          <text class="about-app-icon-text">🍅</text>
+        </view>
+        <text class="about-app-name">专注时钟</text>
+        <text class="about-app-version">版本 2.1.0 (Build 2410)</text>
       </view>
+
+      <view class="about-rating-card" wx:if="{{!ratingSubmitted}}">
+        <text class="about-rating-title">喜欢专注时钟吗？</text>
+        <text class="about-rating-subtitle">你的评分对我们很重要</text>
+        <view class="about-star-row">
+          <view
+            wx:for="{{[1,2,3,4,5]}}"
+            wx:key="*this"
+            class="about-star {{item <= rating ? 'star-on' : ''}}"
+            bind:tap="onRatingStar"
+            data-star="{{item}}"
+          >
+            <text>⭐</text>
+          </view>
+        </view>
+        <view wx:if="{{rating > 0}}" class="about-rating-submit" bind:tap="onRatingSubmit">
+          <text>提交评分</text>
+        </view>
+      </view>
+      <view wx:else class="about-rating-card about-rating-done">
+        <text class="about-rating-done-icon">🎉</text>
+        <text class="about-rating-done-title">感谢你的评分！</text>
+        <text class="about-rating-done-desc">你的支持是我们前进的动力</text>
+      </view>
+
+      <view class="about-info-card">
+        <view class="about-info-item" wx:for="{{appInfo}}" wx:key="label">
+          <text class="about-info-label">{{item.label}}</text>
+          <text class="about-info-value">{{item.value}}</text>
+        </view>
+      </view>
+
+      <view class="about-legal-card">
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="用户协议">
+          <text class="about-legal-text">用户协议</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="隐私政策">
+          <text class="about-legal-text">隐私政策</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="开源许可">
+          <text class="about-legal-text">开源许可</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+
+      <text class="about-footer-text">© 2026 专注团队 · 用心做好每一个番茄 🍅</text>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 

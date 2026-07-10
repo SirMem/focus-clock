@@ -92,6 +92,22 @@ Page({
       { label: '任务记录', value: '—' },
     ],
 
+    // ── 帮助与反馈子视图状态 ──
+    faqOpenIndex: null,
+    feedbackText: '',
+    feedbackSent: false,
+    feedbackMax: 500,
+
+    // ── 关于子视图状态 ──
+    rating: 0,
+    ratingSubmitted: false,
+    appInfo: [
+      { label: '开发团队', value: '专注团队' },
+      { label: '当前版本', value: 'v2.1.0' },
+      { label: '上次更新', value: '2026年6月15日' },
+      { label: '更新内容', value: 'AI教练优化、性能提升' },
+    ],
+
     featureMenu: [
       { icon: '🎯', label: '个人目标', desc: '设置专注参数', key: 'goal' },
       { icon: '🤖', label: 'AI 教练', desc: '查看今日建议', key: 'coach', badge: '92分', badgeColor: '#34C759' },
@@ -149,6 +165,10 @@ Page({
       this._initThemeView();
     } else if (view === 'export') {
       this._initExportView();
+    } else if (view === 'help') {
+      this._initHelpView();
+    } else if (view === 'about') {
+      this._initAboutView();
     }
   },
 
@@ -605,7 +625,64 @@ Page({
     }, 2000);
   },
 
-  /** 导出按钮文字 */
+  // ═══════════════════════════════════════════════════════════
+  //  帮助与反馈子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initHelpView() {
+    this.setData({
+      faqOpenIndex: null,
+      feedbackText: '',
+      feedbackSent: false,
+    });
+  },
+
+  onFaqToggle(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const current = this.data.faqOpenIndex;
+    this.setData({ faqOpenIndex: current === idx ? null : idx });
+  },
+
+  onFeedbackInput(e) {
+    const val = e.detail.value || '';
+    this.setData({ feedbackText: val });
+  },
+
+  onFeedbackSubmit() {
+    const text = this.data.feedbackText.trim();
+    if (!text) return;
+    this.setData({ feedbackText: '', feedbackSent: true });
+    setTimeout(() => { this.setData({ feedbackSent: false }); }, 3000);
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  关于子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initAboutView() {
+    this.setData({ rating: 0, ratingSubmitted: false });
+  },
+
+  onRatingStar(e) {
+    if (this.data.ratingSubmitted) return;
+    const star = Number(e.currentTarget.dataset.star);
+    this.setData({ rating: star });
+  },
+
+  onRatingSubmit() {
+    if (this.data.rating < 1 || this.data.ratingSubmitted) return;
+    this.setData({ ratingSubmitted: true });
+  },
+
+  onLegalTap(e) {
+    const title = e.currentTarget.dataset.title || '页面';
+    wx.showToast({ title: title + '开发中', icon: 'none' });
+  },
+
+  onQuickLinkTap(e) {
+    const label = e.currentTarget.dataset.label || '';
+    wx.showToast({ title: label + '开发中', icon: 'none' });
+  },
 
   onSettingsTap() {
     wx.showToast({ title: '设置', icon: 'none' });

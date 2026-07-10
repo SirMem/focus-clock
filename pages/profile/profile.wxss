@@ -1326,3 +1326,377 @@
 .export-btn[disabled] {
   opacity: 0.7;
 }
+
+/* ════════════════════════════════════════════════════
+   🆕 帮助与反馈子视图（HelpPage）
+   ════════════════════════════════════════════════════ */
+
+.help-sub-view {
+  background: #F5F7FA;
+  padding-bottom: 32rpx;
+}
+
+/* 快捷入口 */
+.help-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin: 32rpx 32rpx 0;
+}
+
+.help-quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  padding: 32rpx 16rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.help-quick-item:active {
+  transform: scale(0.95);
+}
+
+.help-quick-icon {
+  font-size: 48rpx;
+}
+
+.help-quick-label {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #4A4A6A;
+}
+
+/* FAQ */
+.help-faq-card {
+  margin: 24rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.help-faq-section-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 16rpx;
+}
+
+.help-faq-item {
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.help-faq-item:first-child {
+  border-top: none;
+}
+
+.help-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  transition: all 0.2s;
+}
+
+.help-faq-question:active {
+  opacity: 0.7;
+}
+
+.help-faq-q {
+  font-size: 26rpx;
+  color: #1A1A2E;
+  flex: 1;
+  padding-right: 16rpx;
+}
+
+.help-faq-arrow {
+  font-size: 36rpx;
+  color: #8A8A9A;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.arrow-open {
+  transform: rotate(90deg);
+}
+
+.help-faq-answer {
+  padding-bottom: 24rpx;
+}
+
+.help-faq-answer text {
+  font-size: 24rpx;
+  color: #8A8A9A;
+  line-height: 1.6;
+}
+
+/* 意见反馈 */
+.help-feedback-card {
+  margin: 24rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.help-feedback-input-wrap {
+  border: 3rpx solid #E0E4EA;
+  border-radius: 20rpx;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.help-feedback-textarea {
+  width: 100%;
+  padding: 24rpx;
+  font-size: 26rpx;
+  color: #1A1A2E;
+  line-height: 1.5;
+  min-height: 160rpx;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.help-feedback-footer {
+  text-align: right;
+  padding: 8rpx 24rpx 12rpx;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.help-feedback-count {
+  font-size: 22rpx;
+  color: #C0C4CC;
+}
+
+.help-feedback-btn {
+  width: 100%;
+  padding: 24rpx 0;
+  border-radius: 24rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #C0C4CC;
+  background: #E0E4EA;
+  transition: all 0.2s;
+}
+
+.help-feedback-btn:active {
+  transform: scale(0.98);
+}
+
+.feedback-btn-ready {
+  background: #4A90D9;
+  color: #fff;
+}
+
+.feedback-btn-done {
+  background: #34C759;
+  color: #fff;
+}
+
+/* ════════════════════════════════════════════════════
+   🆕 关于子视图（AboutPage）
+   ════════════════════════════════════════════════════ */
+
+.about-sub-view {
+  background: #F5F7FA;
+  padding-bottom: 48rpx;
+}
+
+/* 应用身份 */
+.about-identity-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64rpx 32rpx 48rpx;
+}
+
+.about-app-icon {
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #FF6B6B, #E74C3C);
+  box-shadow: 0 16rpx 48rpx rgba(231, 76, 60, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.about-app-icon-text {
+  font-size: 72rpx;
+}
+
+.about-app-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 8rpx;
+}
+
+.about-app-version {
+  font-size: 24rpx;
+  color: #8A8A9A;
+}
+
+/* 评分 */
+.about-rating-card {
+  margin: 0 32rpx;
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  text-align: center;
+}
+
+.about-rating-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 8rpx;
+}
+
+.about-rating-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: #8A8A9A;
+  margin-bottom: 32rpx;
+}
+
+.about-star-row {
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.about-star {
+  font-size: 48rpx;
+  transition: all 0.2s;
+  filter: grayscale(1) opacity(0.3);
+}
+
+.about-star:active {
+  transform: scale(0.9);
+}
+
+.star-on {
+  filter: none;
+}
+
+.about-rating-submit {
+  display: inline-block;
+  padding: 20rpx 64rpx;
+  border-radius: 999rpx;
+  background: #4A90D9;
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.about-rating-submit:active {
+  transform: scale(0.95);
+}
+
+.about-rating-done {
+  padding: 48rpx 32rpx;
+}
+
+.about-rating-done-icon {
+  display: block;
+  font-size: 64rpx;
+  margin-bottom: 16rpx;
+}
+
+.about-rating-done-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 8rpx;
+}
+
+.about-rating-done-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #8A8A9A;
+}
+
+/* 应用信息 */
+.about-info-card {
+  margin: 24rpx 32rpx 0;
+  border-radius: 32rpx;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.about-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  border-top: 2rpx solid #F0F2F5;
+}
+
+.about-info-item:first-child {
+  border-top: none;
+}
+
+.about-info-label {
+  font-size: 26rpx;
+  color: #8A8A9A;
+}
+
+.about-info-value {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #1A1A2E;
+}
+
+/* 法律链接 */
+.about-legal-card {
+  margin: 24rpx 32rpx 0;
+  border-radius: 32rpx;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.about-legal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-top: 2rpx solid #F0F2F5;
+  transition: all 0.2s;
+}
+
+.about-legal-item:first-child {
+  border-top: none;
+}
+
+.about-legal-item:active {
+  background: #F8F9FA;
+}
+
+.about-legal-text {
+  font-size: 26rpx;
+  color: #1A1A2E;
+}
+
+/* 页脚 */
+.about-footer-text {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: #C0C4CC;
+  margin-top: 48rpx;
+}
