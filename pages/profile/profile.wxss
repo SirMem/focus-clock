@@ -381,3 +381,71 @@
   color: #C0C4CC;
   margin-top: 48rpx;
 }
+
+/* ════════════════════════════════════════════════════
+   🆕 子视图容器 — 独立滚动区域
+   ════════════════════════════════════════════════════ */
+
+.sub-view {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 子视图导航栏（带底部边框，与 Figma 一致） */
+.sub-view-nav {
+  border-bottom: 2rpx solid #F0F2F5;
+}
+
+/* 子视图导航栏标题（与 Figma SubPageHeader 视觉一致） */
+.sub-nav-title {
+  color: #1A1A2E !important;
+  font-size: 32rpx !important;
+}
+
+/* 子视图返回按钮 */
+.nav-back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.nav-back-btn:active {
+  transform: scale(0.9);
+}
+
+/* ════════════════════════════════════════════════════
+   🆕 子视图占位内容（后续 ticket 将替换为真实界面）
+   ════════════════════════════════════════════════════ */
+
+.sub-view-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 160rpx 64rpx;
+  gap: 16rpx;
+}
+
+.placeholder-icon {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.placeholder-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.placeholder-desc {
+  font-size: 26rpx;
+  color: #C0C4CC;
+  text-align: center;
+  line-height: 1.5;
+}
