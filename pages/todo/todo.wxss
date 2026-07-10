@@ -480,6 +480,70 @@
   background: #fff;
 }
 
+/* 编辑模式：完成状态切换 */
+.edit-status-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.edit-status-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.edit-status-circle {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2rpx solid #C0C4CC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.edit-status-circle-done {
+  background: #34C759;
+  border-color: #34C759;
+}
+
+.edit-status-label {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #8A8A9A;
+}
+
+.edit-status-label-done {
+  color: #34C759;
+  text-decoration: line-through;
+}
+
+/* 子任务勾选框（弹窗内） */
+.subtask-checkbox {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  border: 2rpx solid #4A90D9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.subtask-checkbox-checked {
+  background: #34C759;
+  border-color: #34C759;
+}
+
 .sheet-scroll {
   flex: 1;
   height: 0;

@@ -36,6 +36,7 @@ function createEmptyForm() {
     description: '',
     priority: 'medium',
     estimatedPomodoros: 1,
+    isDone: false,
     enableSubtasks: false,
     subtasks: [{ id: `local_${Date.now()}`, title: '', completed: false }],
     enableDue: false,
@@ -72,6 +73,8 @@ Page({
     savingTask: false,
     errorText: '',
     showTaskModal: false,
+    isEditing: false,
+    editingTaskId: null,
     taskForm: createEmptyForm(),
     // 🆕 真实今日统计数据（来自 stats/today）
     realTotalHours: 0,
@@ -210,15 +213,118 @@ Page({
   onFabTap() {
     this.setData({
       showTaskModal: true,
+      isEditing: false,
+      editingTaskId: null,
       taskForm: createEmptyForm(),
     });
+    this._originalForm = null;
   },
 
   closeTaskModal() {
-    this.setData({ showTaskModal: false, savingTask: false });
+    if (this.data.isEditing && this._isDirty()) {
+      wx.showModal({
+        title: '放弃修改？',
+        content: '你有未保存的修改，确定要放弃吗？',
+        success: (res) => {
+          if (res.confirm) this._closeEdit();
+        },
+      });
+    } else {
+      this._closeEdit();
+    }
+  },
+
+  _closeEdit() {
+    this.setData({
+      showTaskModal: false,
+      savingTask: false,
+      isEditing: false,
+      editingTaskId: null,
+      taskForm: createEmptyForm(),
+    });
+    this._originalForm = null;
   },
 
   stopModalTap() {},
+
+  // ─── 脏数据检测 ───
+
+  _formSnapshot(form) {
+    return {
+      title: form.title,
+      description: form.description,
+      priority: form.priority,
+      estimatedPomodoros: form.estimatedPomodoros,
+      isDone: form.isDone,
+      enableDue: form.enableDue,
+      dueDate: form.dueDate,
+      dueTime: form.dueTime,
+      enableRepeat: form.enableRepeat,
+      repeatType: form.repeatType,
+    };
+  },
+
+  _isDirty() {
+    if (!this._originalForm) return false;
+    return JSON.stringify(this._formSnapshot(this.data.taskForm)) !== this._originalForm;
+  },
+
+  // ─── 编辑入口 ───
+
+  onCheckboxTap(e) {
+    const { id } = e.currentTarget.dataset;
+    this._toggleTaskById(id);
+  },
+
+  onContentTap(e) {
+    const { id } = e.currentTarget.dataset;
+    this._openEditModal(id);
+  },
+
+  _openEditModal(id) {
+    const task = this.data.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    let dueDate = '', dueTime = '';
+    if (task.dueAt) {
+      const d = new Date(task.dueAt);
+      dueDate = formatDate(d);
+      dueTime = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const hasDue = !!task.dueAt;
+    const hasRepeat = task.repeat && task.repeat.enabled;
+
+    const form = {
+      title: task.text,
+      description: task.description,
+      priority: task.priority,
+      estimatedPomodoros: task.pomodoros,
+      isDone: task.done,
+      enableSubtasks: hasSubtasks,
+      subtasks: hasSubtasks
+        ? task.subtasks.map(s => ({ ...s }))
+        : [{ id: `local_${Date.now()}`, title: '', completed: false }],
+      enableDue: hasDue,
+      dueDate: dueDate || formatDate(new Date()),
+      dueTime: dueTime || '18:00',
+      enableRepeat: hasRepeat,
+      repeatType: hasRepeat ? task.repeat.type : 'daily',
+    };
+
+    this._originalForm = JSON.stringify(this._formSnapshot(form));
+    this.setData({
+      isEditing: true,
+      editingTaskId: id,
+      taskForm: form,
+      showTaskModal: true,
+    });
+  },
+
+  onEditStatusToggle() {
+    this.setData({ 'taskForm.isDone': !this.data.taskForm.isDone });
+  },
 
   onFormTitleInput(e) {
     this.setData({ 'taskForm.title': e.detail.value });
@@ -246,6 +352,14 @@ Page({
     this.setData({ [`taskForm.subtasks[${index}].title`]: e.detail.value });
   },
 
+  onSubtaskToggle(e) {
+    const index = e.currentTarget.dataset.index;
+    const subtasks = this.data.taskForm.subtasks.slice();
+    subtasks[index] = { ...subtasks[index], completed: !subtasks[index].completed };
+    this.setData({ 'taskForm.subtasks': subtasks });
+    if (this.data.isEditing) this._saveSubtasksInline();
+  },
+
   addSubtask() {
     const subtasks = this.data.taskForm.subtasks.slice();
     if (subtasks.length >= 20) {
@@ -254,15 +368,27 @@ Page({
     }
     subtasks.push({ id: `local_${Date.now()}_${subtasks.length}`, title: '', completed: false });
     this.setData({ 'taskForm.subtasks': subtasks });
+    if (this.data.isEditing) this._saveSubtasksInline();
   },
 
   removeSubtask(e) {
     const index = e.currentTarget.dataset.index;
     const subtasks = this.data.taskForm.subtasks.slice();
     subtasks.splice(index, 1);
-    this.setData({
-      'taskForm.subtasks': subtasks.length ? subtasks : [{ id: `local_${Date.now()}`, title: '', completed: false }],
-    });
+    const newSubtasks = subtasks.length ? subtasks : [{ id: `local_${Date.now()}`, title: '', completed: false }];
+    this.setData({ 'taskForm.subtasks': newSubtasks });
+    if (this.data.isEditing) this._saveSubtasksInline();
+  },
+
+  async _saveSubtasksInline() {
+    const subtasks = this.data.taskForm.subtasks
+      .filter(s => s.title.trim())
+      .map(s => ({ title: s.title.trim(), completed: s.completed }));
+    try {
+      await taskAPI.update(this.data.editingTaskId, { subtasks });
+    } catch (err) {
+      wx.showToast({ title: '子任务保存失败', icon: 'none' });
+    }
   },
 
   toggleFormDue() {
@@ -299,16 +425,23 @@ Page({
       return;
     }
 
+    const isEditing = this.data.isEditing;
+
+    // 编辑模式下始终提交 subtasks（不依赖 enableSubtasks 开关），
+    // 新建模式遵守 enableSubtasks 开关
+    const subtasksRaw = form.enableSubtasks || isEditing
+      ? form.subtasks
+        .map(item => ({ title: item.title.trim(), completed: item.completed }))
+        .filter(item => item.title)
+      : [];
+
     const payload = {
       title,
       description: form.description.trim(),
       priority: form.priority,
       estimatedPomodoros: form.estimatedPomodoros,
-      subtasks: form.enableSubtasks
-        ? form.subtasks
-          .map(item => ({ title: item.title.trim(), completed: false }))
-          .filter(item => item.title)
-        : [],
+      isDone: form.isDone,
+      subtasks: subtasksRaw,
       dueAt: form.enableDue ? this._buildDueAt(form.dueDate, form.dueTime) : null,
       repeat: form.enableRepeat
         ? { enabled: true, type: form.repeatType, interval: 1 }
@@ -317,10 +450,21 @@ Page({
 
     this.setData({ savingTask: true });
     try {
-      await taskAPI.create(payload);
-      this.setData({ showTaskModal: false, savingTask: false, taskForm: createEmptyForm() });
+      if (isEditing) {
+        await taskAPI.update(this.data.editingTaskId, payload);
+      } else {
+        await taskAPI.create(payload);
+      }
+      this.setData({
+        showTaskModal: false,
+        savingTask: false,
+        isEditing: false,
+        editingTaskId: null,
+        taskForm: createEmptyForm(),
+      });
+      this._originalForm = null;
       await this._loadTasks({ silent: true });
-      wx.showToast({ title: '已保存', icon: 'success' });
+      wx.showToast({ title: isEditing ? '已更新' : '已保存', icon: 'success' });
     } catch (err) {
       this.setData({ savingTask: false });
       wx.showToast({ title: '保存失败', icon: 'none' });
@@ -376,9 +520,8 @@ Page({
     const swipeX = task._swipeX || 0;
 
     if (absSwipe < 10) {
-      // 轻点 → 切换完成状态
+      // 轻点 → 仅重置状态，不 toggle（catchtap 事件各自处理）
       this._resetSwipeState(id);
-      this._toggleTaskById(id);
     } else if (absSwipe > 80) {
       // 超过阈值 → 飞出后删除
       const flyDir = swipeX > 0 ? 1 : -1;

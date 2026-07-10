@@ -96,12 +96,14 @@
             <!-- 勾选框 -->
             <view
               class="task-checkbox {{item.done ? 'checkbox-checked' : ''}}"
+              catchtap="onCheckboxTap"
+              data-id="{{item.id}}"
             >
               <t-icon wx:if="{{item.done}}" name="check" size="24rpx" color="#fff" />
             </view>
 
-            <!-- 任务内容 -->
-            <view class="task-content">
+            <!-- 任务内容（点击进入编辑） -->
+            <view class="task-content" catchtap="onContentTap" data-id="{{item.id}}">
               <view class="task-title-row">
                 <text class="task-title {{item.done ? 'title-done' : ''}}">{{item.text}}</text>
                 <text class="priority-badge priority-{{item.priority}}">{{item.priorityLabel}}</text>
@@ -149,11 +151,23 @@
       <view class="sheet-handle"></view>
       <view class="sheet-header">
         <view>
-          <text class="sheet-title">新建任务</text>
-          <text class="sheet-subtitle">把任务规划清楚，再开始专注</text>
+          <text class="sheet-title">{{isEditing ? '编辑任务' : '新建任务'}}</text>
+          <text class="sheet-subtitle">{{isEditing ? '修改任务细节，或调整完成状态' : '把任务规划清楚，再开始专注'}}</text>
         </view>
         <view class="sheet-close" bind:tap="closeTaskModal">
           <t-icon name="close" size="36rpx" color="#8A8A9A" />
+        </view>
+      </view>
+
+      <!-- 编辑模式：完成状态切换 -->
+      <view wx:if="{{isEditing}}" class="edit-status-bar" catchtap="onEditStatusToggle">
+        <view class="edit-status-left">
+          <view class="edit-status-circle {{taskForm.isDone ? 'edit-status-circle-done' : ''}}">
+            <t-icon wx:if="{{taskForm.isDone}}" name="check" size="20rpx" color="#fff" />
+          </view>
+          <text class="edit-status-label {{taskForm.isDone ? 'edit-status-label-done' : ''}}">
+            {{taskForm.isDone ? '已完成' : '标记为已完成'}}
+          </text>
         </view>
       </view>
 
@@ -216,6 +230,10 @@
           </view>
           <view wx:if="{{taskForm.enableSubtasks}}" class="subtask-editor">
             <view wx:for="{{taskForm.subtasks}}" wx:key="id" class="subtask-row">
+              <view class="subtask-checkbox {{item.completed ? 'subtask-checkbox-checked' : ''}}"
+                    catchtap="onSubtaskToggle" data-index="{{index}}">
+                <t-icon wx:if="{{item.completed}}" name="check" size="18rpx" color="#fff" />
+              </view>
               <input
                 class="subtask-input"
                 value="{{item.title}}"
@@ -273,7 +291,7 @@
       <view class="sheet-actions">
         <view class="cancel-btn" bind:tap="closeTaskModal">取消</view>
         <view class="save-btn {{savingTask ? 'save-disabled' : ''}}" bind:tap="saveTaskFromModal">
-          {{savingTask ? '保存中...' : '保存任务'}}
+          {{savingTask ? '保存中...' : (isEditing ? '保存修改' : '保存任务')}}
         </view>
       </view>
     </view>
