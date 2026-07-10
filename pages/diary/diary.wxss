@@ -1,26 +1,44 @@
-/* ===== 日记日期头 ===== */
+/* ===== 日记日期头（Figma 对齐） ===== */
 .diary-date-header {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  padding: 32rpx 32rpx 0;
+  padding: 40rpx 32rpx 0;
 }
 
-.date-icon-wrap {
-  width: 48rpx;
-  height: 48rpx;
+.date-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.diary-date-big {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  letter-spacing: 2rpx;
+}
+
+.date-calendar-btn {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #F0F2F5;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.diary-date-text {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #1A1A2E;
+.date-calendar-btn:active {
+  background: #E0E4EA;
 }
 
-/* ===== 心情选择器 ===== */
+.diary-date-sub {
+  display: block;
+  font-size: 26rpx;
+  color: #8A8A9A;
+  padding-left: 4rpx;
+}
+
+/* ===== 心情选择器（Figma 圆形按钮） ===== */
 .emotion-section {
   padding: 32rpx 32rpx 0;
 }
@@ -29,32 +47,44 @@
   display: block;
   font-size: 26rpx;
   font-weight: 500;
-  color: #1A1A2E;
-  margin-bottom: 20rpx;
+  color: #8A8A9A;
+  margin-bottom: 24rpx;
 }
 
 .emotion-row {
   display: flex;
-  gap: 16rpx;
+  justify-content: space-between;
 }
 
 .emotion-item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  padding: 20rpx 8rpx;
-  border-radius: 24rpx;
-  background: #fff;
-  border: 2rpx solid transparent;
+  gap: 12rpx;
   transition: all 0.2s;
 }
 
-.emotion-active {
+.emotion-item:active {
+  transform: scale(0.95);
+}
+
+.emotion-circle {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid transparent;
+  transition: all 0.25s ease;
+}
+
+.emotion-circle-active {
+  background: #fff;
   border-color: #4A90D9;
-  background: #EBF4FF;
-  box-shadow: 0 4rpx 16rpx rgba(74, 144, 217, 0.15);
+  box-shadow: 0 8rpx 32rpx rgba(74, 144, 217, 0.2);
+  transform: scale(1.1);
 }
 
 .emotion-emoji {
@@ -62,13 +92,14 @@
 }
 
 .emotion-label {
-  font-size: 20rpx;
-  color: #8A8A9A;
+  font-size: 22rpx;
+  color: #C0C4CC;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
-.emotion-active .emotion-label {
+.emotion-label-active {
   color: #4A90D9;
-  font-weight: 500;
 }
 
 /* ===== AI 引导提示 ===== */
@@ -351,6 +382,575 @@
 .history-item-preview {
   display: block;
   font-size: 26rpx;
+  color: #4A4A6A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   HistoryView 样式
+   ================================================================ */
+
+/* 顶部栏 */
+.hist-header {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 2rpx solid #F0F2F5;
+  padding: 20rpx 32rpx 24rpx;
+}
+
+.hist-header-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.hist-back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.hist-back-btn:active {
+  background: #E0E4EA;
+}
+
+.hist-header-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  flex: 1;
+}
+
+.hist-header-count {
+  font-size: 24rpx;
+  color: #8A8A9A;
+}
+
+/* 筛选行 */
+.hist-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.hist-filter-label {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #8A8A9A;
+  flex-shrink: 0;
+  width: 56rpx;
+}
+
+.hist-filter-scroll {
+  display: flex;
+  flex-direction: row;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hist-filter-chip {
+  display: inline-flex;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #8A8A9A;
+  background: #F0F2F5;
+  margin-right: 12rpx;
+  transition: all 0.2s;
+}
+
+.hist-filter-chip:active {
+  opacity: 0.7;
+}
+
+.hist-filter-chip-active {
+  background: #4A90D9;
+  color: #fff;
+}
+
+/* 心情筛选行 */
+.hist-emotion-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.hist-emotion-chip {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: #F0F2F5;
+  transition: all 0.2s;
+}
+
+.hist-emotion-chip:active {
+  opacity: 0.7;
+}
+
+.hist-emotion-chip-active {
+  background: #4A90D9;
+}
+
+.hist-emotion-emoji {
+  font-size: 28rpx;
+}
+
+.hist-emotion-text {
+  font-size: 22rpx;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* 已筛选标签 */
+.hist-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-top: 8rpx;
+}
+
+.hist-active-label {
+  font-size: 22rpx;
+  color: #8A8A9A;
+}
+
+.hist-active-tag {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #4A90D9;
+  font-size: 22rpx;
+  color: #fff;
+}
+
+.hist-tag-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28rpx;
+  height: 28rpx;
+}
+
+/* 自定义日期选择器 */
+.hist-date-picker {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border-radius: 24rpx;
+  background: #F5F7FA;
+  border: 2rpx solid #E8ECF0;
+}
+
+.hist-date-picker-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.hist-dp-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.hist-dp-btn {
+  flex: 1;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: #fff;
+  font-size: 24rpx;
+  color: #1A1A2E;
+  text-align: center;
+  border: 2rpx solid #E0E4EA;
+}
+
+/* 列表容器 */
+.hist-list-wrap {
+  padding: 24rpx 32rpx;
+}
+
+/* 空态 */
+.hist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 128rpx 0;
+}
+
+.hist-empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.hist-empty-title {
+  font-size: 28rpx;
+  color: #8A8A9A;
+  margin-bottom: 32rpx;
+}
+
+.hist-empty-btn {
+  padding: 16rpx 40rpx;
+  border-radius: 999rpx;
+  background: #EBF4FF;
+  font-size: 26rpx;
+  color: #4A90D9;
+  font-weight: 500;
+}
+
+.hist-empty-btn:active {
+  opacity: 0.7;
+}
+
+/* 条目卡片 */
+.hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.hist-card {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 28rpx;
+  border-radius: 28rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.hist-card:active {
+  transform: scale(0.99);
+}
+
+.hist-card-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-card-emoji-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 24rpx;
+  background: #F0F4FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hist-card-emoji {
+  font-size: 36rpx;
+}
+
+.hist-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.hist-card-date {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.hist-card-pomo {
+  font-size: 20rpx;
+  color: #FF9500;
+}
+
+.hist-card-preview {
+  display: block;
+  font-size: 24rpx;
+  color: #8A8A9A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   DetailView 样式
+   ================================================================ */
+
+/* 顶部栏 */
+.dtl-header {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 32rpx;
+  background: #fff;
+  border-bottom: 2rpx solid #F0F2F5;
+  flex-shrink: 0;
+}
+
+.dtl-back-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dtl-back-btn:active {
+  background: #E0E4EA;
+}
+
+.dtl-header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.dtl-nav-btns {
+  display: flex;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
+.dtl-nav-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dtl-nav-btn:active {
+  background: #E0E4EA;
+}
+
+.dtl-nav-disabled {
+  opacity: 0.4;
+}
+
+/* Hero 区 */
+.dtl-hero {
+  margin: 24rpx 32rpx 0;
+  padding: 36rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #EBF4FF, #F0EEFF);
+  border: 2rpx solid #D0E4FF;
+}
+
+.dtl-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 28rpx;
+}
+
+.dtl-emotion-icon-wrap {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 28rpx;
+  background: rgba(74, 144, 217, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dtl-emotion-icon {
+  font-size: 52rpx;
+}
+
+.dtl-hero-info {}
+
+.dtl-emotion-tag {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(74, 144, 217, 0.15);
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4A90D9;
+  margin-bottom: 8rpx;
+}
+
+.dtl-hero-date {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+
+/* 三指标 */
+.dtl-stats-row {
+  display: flex;
+  gap: 12rpx;
+}
+
+.dtl-stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.dtl-stat-value {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+
+.dtl-stat-label {
+  display: block;
+  font-size: 20rpx;
+  color: #8A8A9A;
+}
+
+/* 正文卡片 */
+.dtl-content-card {
+  margin: 20rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 28rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.dtl-content-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.dtl-content-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.dtl-content-text {
+  display: block;
+  font-size: 26rpx;
+  color: #4A4A6A;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* AI 洞察卡片 */
+.dtl-ai-card {
+  margin: 20rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #EBF4FF, #F0EEFF);
+  border: 2rpx solid #D0E4FF;
+}
+
+.dtl-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.dtl-ai-badge {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4A90D9, #6C5CE7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.dtl-ai-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4A90D9;
+}
+
+.dtl-ai-text {
+  display: block;
+  font-size: 26rpx;
+  color: #3A5A8A;
+  line-height: 1.7;
+}
+
+/* 底部上下篇导航 */
+.dtl-foot-nav {
+  display: flex;
+  gap: 16rpx;
+  margin: 20rpx 32rpx 0;
+}
+
+.dtl-foot-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.dtl-foot-btn:active {
+  transform: scale(0.98);
+}
+
+.dtl-foot-btn-right {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.dtl-foot-btn-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.dtl-foot-btn-text-right {
+  text-align: right;
+}
+
+.dtl-foot-label {
+  display: block;
+  font-size: 20rpx;
+  color: #C0C4CC;
+  margin-bottom: 4rpx;
+}
+
+.dtl-foot-title {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 500;
   color: #4A4A6A;
   overflow: hidden;
   text-overflow: ellipsis;

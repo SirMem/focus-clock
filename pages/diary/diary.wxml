@@ -14,29 +14,35 @@
     </view>
   </view>
 
-  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+  <!-- ===== WriteView ===== -->
+  <scroll-view wx:if="{{view === 'write'}}" class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
 
-    <!-- ===== 日期标题 ===== -->
+    <!-- ===== 日期标题（Figma 对齐） ===== -->
     <view class="diary-date-header">
-      <view class="date-icon-wrap">
-        <t-icon name="time" size="36rpx" color="#4A90D9" />
+      <view class="date-header-top">
+        <text class="diary-date-big">{{todayDate}}</text>
+        <view class="date-calendar-btn" bind:tap="onMenuTap">
+          <t-icon name="time" size="36rpx" color="#8A8A9A" />
+        </view>
       </view>
-      <text class="diary-date-text">{{todayDate}}</text>
+      <text class="diary-date-sub">{{todaySubtitle}}</text>
     </view>
 
-    <!-- ===== 心情选择器 ===== -->
+    <!-- ===== 心情选择器（Figma 圆形按钮） ===== -->
     <view class="emotion-section">
       <text class="section-label">今天的心情</text>
       <view class="emotion-row">
         <view
           wx:for="{{emotions}}"
           wx:key="id"
-          class="emotion-item {{item.id === selectedEmotion ? 'emotion-active' : ''}}"
+          class="emotion-item"
           bind:tap="onEmotionSelect"
           data-id="{{item.id}}"
         >
-          <text class="emotion-emoji">{{item.emoji}}</text>
-          <text class="emotion-label">{{item.label}}</text>
+          <view class="emotion-circle {{item.id === selectedEmotion ? 'emotion-circle-active' : ''}}">
+            <text class="emotion-emoji">{{item.emoji}}</text>
+          </view>
+          <text class="emotion-label {{item.id === selectedEmotion ? 'emotion-label-active' : ''}}">{{item.label}}</text>
         </view>
       </view>
     </view>
@@ -129,7 +135,7 @@
       <!-- 历史列表 -->
       <view wx:else class="history-list">
         <view
-          wx:for="{{historyEntries}}"
+          wx:for="{{historyEntries.slice(0, 3)}}"
           wx:key="id"
           class="history-item"
           bind:tap="onHistoryTap"
@@ -142,6 +148,215 @@
           </view>
           <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
         </view>
+      </view>
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+  <!-- ===== HistoryView ===== -->
+  <scroll-view wx:elif="{{view === 'history'}}" class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- 顶部栏 -->
+    <view class="hist-header">
+      <view class="hist-header-top">
+        <view class="hist-back-btn" bind:tap="onHistoryBack">
+          <t-icon name="chevron-left" size="32rpx" color="#1A1A2E" />
+        </view>
+        <text class="hist-header-title">全部日记</text>
+        <text class="hist-header-count">共 {{filteredEntries.length}} 篇</text>
+      </view>
+
+      <!-- 日期筛选 -->
+      <view class="hist-filter-row">
+        <view class="hist-filter-label">日期</view>
+        <scroll-view class="hist-filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view
+            wx:for="{{dateFilters}}"
+            wx:key="key"
+            class="hist-filter-chip {{dateFilter === item.key ? 'hist-filter-chip-active' : ''}}"
+            bind:tap="onDateFilterTap"
+            data-key="{{item.key}}"
+          >
+            <text>{{item.label}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 心情筛选 -->
+      <view class="hist-filter-row">
+        <view class="hist-filter-label">心情</view>
+        <view class="hist-emotion-row">
+          <view
+            wx:for="{{emotions}}"
+            wx:key="id"
+            class="hist-emotion-chip {{emotionFilter === item.id ? 'hist-emotion-chip-active' : ''}}"
+            bind:tap="onEmotionFilterTap"
+            data-id="{{item.id}}"
+          >
+            <text class="hist-emotion-emoji">{{item.emoji}}</text>
+            <text wx:if="{{emotionFilter === item.id}}" class="hist-emotion-text">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 已筛选标签 -->
+      <view wx:if="{{filterApplied}}" class="hist-active-filters">
+        <text class="hist-active-label">已筛选：</text>
+        <view wx:if="{{dateFilter !== 'all'}}" class="hist-active-tag">
+          <text>{{filterLabel}}</text>
+          <view class="hist-tag-x" bind:tap="onClearFilter" data-type="date">
+            <t-icon name="close" size="20rpx" color="#fff" />
+          </view>
+        </view>
+        <view wx:if="{{emotionFilter}}" class="hist-active-tag">
+          <text>{{filterEmoji}} {{filterEmotionLabel}}</text>
+          <view class="hist-tag-x" bind:tap="onClearFilter" data-type="emotion">
+            <t-icon name="close" size="20rpx" color="#fff" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 自定义日期选择器 -->
+      <view wx:if="{{showDatePicker}}" class="hist-date-picker">
+        <view class="hist-date-picker-inner">
+          <view class="hist-dp-row">
+            <picker mode="date" value="{{customDateStart}}" bindchange="onCustomDateStart">
+              <view class="hist-dp-btn">起始：{{customDateStart || '选择'}}</view>
+            </picker>
+            <picker mode="date" value="{{customDateEnd}}" bindchange="onCustomDateEnd">
+              <view class="hist-dp-btn">结束：{{customDateEnd || '选择'}}</view>
+            </picker>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 列表 -->
+    <view class="hist-list-wrap">
+      <!-- 空态 -->
+      <view wx:if="{{filteredEntries.length === 0}}" class="hist-empty">
+        <text class="hist-empty-icon">🔍</text>
+        <text class="hist-empty-title">没有符合条件的记录</text>
+        <view class="hist-empty-btn" bind:tap="onClearAllFilters">
+          <text>清除筛选</text>
+        </view>
+      </view>
+
+      <!-- 条目列表（简便起见，直接列出而非按月分组） -->
+      <view wx:else class="hist-list">
+        <view
+          wx:for="{{filteredEntries}}"
+          wx:key="id"
+          class="hist-card"
+          bind:tap="onHistoryTap"
+          data-id="{{item.id}}"
+        >
+          <view class="hist-card-left">
+            <view class="hist-card-emoji-wrap">
+              <text class="hist-card-emoji">{{item.emotionEmoji}}</text>
+            </view>
+            <view class="hist-card-info">
+              <view class="hist-card-top">
+                <text class="hist-card-date">{{item.date}}</text>
+                <text wx:if="{{item.pomodoros}}" class="hist-card-pomo">🍅 {{item.pomodoros}}</text>
+              </view>
+              <text class="hist-card-preview">{{item.preview}}</text>
+            </view>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+  <!-- ===== DetailView ===== -->
+  <scroll-view wx:elif="{{view === 'detail' && selectedEntry}}" class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- 顶部栏：返回 + 日期 + 上下篇 -->
+    <view class="dtl-header">
+      <view class="dtl-back-btn" bind:tap="onDetailBack">
+        <t-icon name="chevron-left" size="32rpx" color="#1A1A2E" />
+      </view>
+      <text class="dtl-header-title">{{selectedEntry.date}}</text>
+      <view class="dtl-nav-btns">
+        <view class="dtl-nav-btn {{detailPrevEntry ? '' : 'dtl-nav-disabled'}}" bind:tap="onDetailPrev">
+          <t-icon name="chevron-left" size="24rpx" color="{{detailPrevEntry ? '#1A1A2E' : '#D0D4DB'}}" />
+        </view>
+        <view class="dtl-nav-btn {{detailNextEntry ? '' : 'dtl-nav-disabled'}}" bind:tap="onDetailNext">
+          <t-icon name="chevron-right" size="24rpx" color="{{detailNextEntry ? '#1A1A2E' : '#D0D4DB'}}" />
+        </view>
+      </view>
+    </view>
+
+    <!-- Hero 区：情绪 + 统计 -->
+    <view class="dtl-hero">
+      <view class="dtl-hero-top">
+        <view class="dtl-emotion-icon-wrap">
+          <text class="dtl-emotion-icon">{{selectedEntry.emotionEmoji}}</text>
+        </view>
+        <view class="dtl-hero-info">
+          <view class="dtl-emotion-tag">{{selectedEntry.emotionLabel}}</view>
+          <text class="dtl-hero-date">{{selectedEntry.date}}</text>
+        </view>
+      </view>
+
+      <!-- 三指标统计 -->
+      <view class="dtl-stats-row">
+        <view class="dtl-stat-item">
+          <text class="dtl-stat-value">🍅 --</text>
+          <text class="dtl-stat-label">番茄数</text>
+        </view>
+        <view class="dtl-stat-item">
+          <text class="dtl-stat-value">⏱ --</text>
+          <text class="dtl-stat-label">专注时长</text>
+        </view>
+        <view class="dtl-stat-item">
+          <text class="dtl-stat-value">✅ --</text>
+          <text class="dtl-stat-label">完成任务</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 正文 -->
+    <view class="dtl-content-card">
+      <view class="dtl-content-header">
+        <text>📝</text>
+        <text class="dtl-content-title">今日记录</text>
+      </view>
+      <view class="dtl-content-body">
+        <text class="dtl-content-text">{{selectedEntry.content}}</text>
+      </view>
+    </view>
+
+    <!-- AI 洞察 -->
+    <view class="dtl-ai-card">
+      <view class="dtl-ai-header">
+        <view class="dtl-ai-badge">AI</view>
+        <text class="dtl-ai-title">AI 教练洞察</text>
+      </view>
+      <text class="dtl-ai-text">
+        专注记录是提升效率的第一步。持续记录不仅能帮你发现自己的专注模式，还能让 AI 教练为你提供更精准的建议。
+      </text>
+    </view>
+
+    <!-- 上下篇导航 -->
+    <view class="dtl-foot-nav">
+      <view wx:if="{{detailPrevEntry}}" class="dtl-foot-btn" bind:tap="onDetailPrev">
+        <t-icon name="chevron-left" size="28rpx" color="#8A8A9A" />
+        <view class="dtl-foot-btn-text">
+          <text class="dtl-foot-label">上一篇</text>
+          <text class="dtl-foot-title">{{detailPrevEntry.emotionEmoji}} {{detailPrevEntry.date}}</text>
+        </view>
+      </view>
+      <view wx:if="{{detailNextEntry}}" class="dtl-foot-btn dtl-foot-btn-right" bind:tap="onDetailNext">
+        <view class="dtl-foot-btn-text dtl-foot-btn-text-right">
+          <text class="dtl-foot-label">下一篇</text>
+          <text class="dtl-foot-title">{{detailNextEntry.emotionEmoji}} {{detailNextEntry.date}}</text>
+        </view>
+        <t-icon name="chevron-right" size="28rpx" color="#8A8A9A" />
       </view>
     </view>
 

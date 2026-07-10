@@ -537,6 +537,8 @@ Page({
     // 其他 tab → 跳转对应页面
     const pageMap = {
       todo: '/pages/todo/todo',
+      diary: '/pages/diary/diary',
+      stats: '/pages/stats/stats',
     };
     const url = pageMap[key];
     if (url) {

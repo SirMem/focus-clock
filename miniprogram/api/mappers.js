@@ -82,7 +82,7 @@ function formatTaskDueAt(timestamp) {
 
 /**
  * 英文 emotion id → 后端中文情绪标签
- * @param {string} id - 页面英文 id: happy/calm/sad/anxious/excited
+ * @param {string} id - 页面英文 id: happy/calm/sad/anxious/focused
  * @returns {string} 后端 canonical 中文标签
  */
 function mapEmotionToCanonical(id) {
@@ -91,6 +91,7 @@ function mapEmotionToCanonical(id) {
     calm: '平静',
     sad: '沮丧',
     anxious: '焦虑',
+    focused: '兴奋',  // 🧘 专注 → 兴奋（后端尚未支持"专注"，用最接近的正向标签）
     excited: '兴奋',
   };
   return MAP[id] || '平静';
@@ -108,6 +109,7 @@ function mapCanonicalToEmotion(tag) {
     '沮丧': { emoji: '😢', label: '沮丧' },
     '焦虑': { emoji: '😤', label: '焦虑' },
     '兴奋': { emoji: '🤩', label: '兴奋' },
+    '专注': { emoji: '🧘', label: '专注' },
     '疲惫': { emoji: '😴', label: '疲惫' },
     '无聊': { emoji: '😶', label: '无聊' },
   };
