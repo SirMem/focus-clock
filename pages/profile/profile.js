@@ -48,6 +48,13 @@ Page({
     monthlyGoalTarget: 50,
     goalRemain: 50,
 
+    // ── 个人目标子视图状态 ──
+    goalFocusDuration: 25,
+    goalMonthlyTarget: 50,
+    goalDailyTarget: 4,
+    goalSaved: false,
+    goalDailyDisplay: ['🍅', '🍅', '🍅', '🍅'],
+
     featureMenu: [
       { icon: '🎯', label: '个人目标', desc: '设置专注参数', key: 'goal' },
       { icon: '🤖', label: 'AI 教练', desc: '查看今日建议', key: 'coach', badge: '92分', badgeColor: '#34C759' },
@@ -95,6 +102,11 @@ Page({
       currentView: view,
       subViewTitle: MAP[view] || '',
     });
+
+    // 进入子视图时初始化对应数据
+    if (view === 'goal') {
+      this._initGoalView();
+    }
   },
 
   /** 子视图返回主视图 */
@@ -289,6 +301,119 @@ Page({
     } finally {
       wx.hideLoading();
       this.setData({ profileSubmitting: false });
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  个人目标子视图
+  // ═══════════════════════════════════════════════════════════
+
+  /** 进入目标视图时从 settings 预填当前值 */
+  _initGoalView() {
+    const settings = this.data.settings || {};
+    const focusDuration = settings.focusDuration || 25;
+    const dailyTarget = settings.dailyGoal || 4;
+    const monthlyTarget = settings.monthlyTarget || 50;
+
+    this.setData({
+      goalFocusDuration: focusDuration,
+      goalMonthlyTarget: monthlyTarget,
+      goalDailyTarget: dailyTarget,
+      goalSaved: false,
+      goalDailyDisplay: this._computeDailyDisplay(dailyTarget),
+      monthlyGoalTarget: monthlyTarget,
+    });
+
+    // 用已有统计数据刷新进度
+    this._refreshGoalProgress(monthlyTarget);
+  },
+
+  /** 刷新本月目标进度 */
+  _refreshGoalProgress(monthlyTarget) {
+    const monthlyCurrent = this.data.monthlyGoalCurrent;
+    const progress = monthlyTarget > 0 ? Math.min(100, Math.round((monthlyCurrent / monthlyTarget) * 100)) : 0;
+    const remain = Math.max(0, Math.round((monthlyTarget - monthlyCurrent) * 10) / 10);
+    this.setData({ monthlyGoalProgress: progress, goalRemain: remain });
+  },
+
+  /** 计算每日番茄 🍅 显示数组 */
+  _computeDailyDisplay(count) {
+    const emojis = [];
+    const maxShow = Math.min(count, 10);
+    for (let i = 0; i < maxShow; i++) {
+      emojis.push('🍅');
+    }
+    return emojis;
+  },
+
+  onGoalFocusDuration(e) {
+    const val = Number(e.currentTarget.dataset.value);
+    if (!val) return;
+    this.setData({ goalFocusDuration: val, goalSaved: false });
+  },
+
+  onGoalMonthlySub() {
+    const val = Math.max(10, this.data.goalMonthlyTarget - 5);
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalMonthlyAdd() {
+    const val = Math.min(200, this.data.goalMonthlyTarget + 5);
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalMonthlyPreset(e) {
+    const val = Number(e.currentTarget.dataset.value);
+    if (!val) return;
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalDailySub() {
+    const val = Math.max(1, this.data.goalDailyTarget - 1);
+    this.setData({
+      goalDailyTarget: val,
+      goalDailyDisplay: this._computeDailyDisplay(val),
+      goalSaved: false,
+    });
+  },
+
+  onGoalDailyAdd() {
+    const val = Math.min(20, this.data.goalDailyTarget + 1);
+    this.setData({
+      goalDailyTarget: val,
+      goalDailyDisplay: this._computeDailyDisplay(val),
+      goalSaved: false,
+    });
+  },
+
+  async onGoalSave() {
+    wx.showLoading({ title: '保存中...' });
+    try {
+      const res = await userAPI.updateSettings({
+        focusDuration: this.data.goalFocusDuration,
+        dailyGoal: this.data.goalDailyTarget,
+        monthlyTarget: this.data.goalMonthlyTarget,
+      });
+
+      wx.hideLoading();
+
+      if (res.code === 0) {
+        // 更新本地 settings 缓存
+        const settings = { ...(this.data.settings || {}), focusDuration: this.data.goalFocusDuration, dailyGoal: this.data.goalDailyTarget, monthlyTarget: this.data.goalMonthlyTarget };
+        this.setData({ goalSaved: true, settings });
+        setTimeout(() => {
+          this.setData({ goalSaved: false });
+        }, 2000);
+      } else {
+        wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.error('[profile] save goal failed:', err);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
     }
   },
 

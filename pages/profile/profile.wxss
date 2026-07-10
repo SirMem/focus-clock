@@ -449,3 +449,275 @@
   text-align: center;
   line-height: 1.5;
 }
+
+/* ════════════════════════════════════════════════════
+   🆕 个人目标子视图（GoalPage）
+   ════════════════════════════════════════════════════ */
+
+.goal-sub-view {
+  background: #F5F7FA;
+  padding-bottom: 32rpx;
+}
+
+/* 进度卡片 */
+.goal-progress-card {
+  margin: 32rpx 32rpx 0;
+  padding: 32rpx 40rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #4A90D9, #667EEA);
+  box-shadow: 0 8rpx 24rpx rgba(74, 144, 217, 0.25);
+}
+
+.goal-progress-label {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 8rpx;
+}
+
+.goal-progress-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.goal-progress-pct {
+  font-size: 80rpx;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.goal-progress-unit {
+  font-size: 36rpx;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 8rpx;
+}
+
+.goal-progress-sub {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 8rpx;
+  margin-left: auto;
+}
+
+.goal-progress-track {
+  width: 100%;
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255,255,255,0.25);
+  overflow: hidden;
+  margin-bottom: 12rpx;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: #fff;
+  transition: width 0.5s;
+}
+
+.goal-progress-remain {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(255,255,255,0.6);
+}
+
+/* 设置卡片 */
+.goal-setting-card {
+  margin: 24rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.goal-setting-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+
+.goal-setting-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-bottom: 24rpx;
+}
+
+.goal-setting-hint {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  margin-top: 16rpx;
+}
+
+/* 专注时长按钮网格 */
+.goal-duration-grid {
+  display: grid;
+  gap: 16rpx;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.goal-duration-btn {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #4A4A6A;
+  background: #F0F2F5;
+  transition: all 0.2s;
+}
+
+.goal-duration-btn:active {
+  transform: scale(0.95);
+}
+
+.duration-active {
+  background: #4A90D9;
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(74, 144, 217, 0.3);
+}
+
+/* 步进器 */
+.goal-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.goal-stepper-btn {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.goal-stepper-btn:active {
+  transform: scale(0.9);
+}
+
+.goal-stepper-sub {
+  background: #F0F2F5;
+}
+
+.goal-stepper-add {
+  background: #4A90D9;
+}
+
+.stepper-sign {
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.goal-stepper-sub .stepper-sign {
+  color: #4A4A6A;
+}
+
+.goal-stepper-add .stepper-sign {
+  color: #fff;
+}
+
+.goal-stepper-value-wrap {
+  flex: 1;
+  text-align: center;
+}
+
+.goal-stepper-value {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #4A90D9;
+  line-height: 1;
+}
+
+.goal-stepper-unit {
+  font-size: 24rpx;
+  color: #8A8A9A;
+  margin-left: 8rpx;
+}
+
+/* 快速预设 */
+.goal-preset-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.goal-preset-btn {
+  flex: 1;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #8A8A9A;
+  background: #F5F7FA;
+  transition: all 0.2s;
+}
+
+.goal-preset-btn:active {
+  transform: scale(0.95);
+}
+
+.preset-active {
+  background: #EBF4FF;
+  color: #4A90D9;
+  font-weight: 600;
+}
+
+/* 每日番茄显示 */
+.goal-daily-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.goal-daily-emoji {
+  font-size: 36rpx;
+}
+
+.goal-daily-overflow {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #4A90D9;
+  margin-left: 8rpx;
+}
+
+/* 保存按钮 */
+.goal-save-section {
+  margin: 32rpx 32rpx 0;
+}
+
+.goal-save-btn {
+  width: 100%;
+  padding: 28rpx 0;
+  border-radius: 28rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4A90D9, #667EEA);
+  box-shadow: 0 8rpx 24rpx rgba(74, 144, 217, 0.3);
+  transition: all 0.2s;
+}
+
+.goal-save-btn:active {
+  transform: scale(0.98);
+}
+
+.goal-save-done {
+  background: linear-gradient(135deg, #34C759, #28A745);
+  box-shadow: 0 8rpx 24rpx rgba(52, 199, 89, 0.3);
+}

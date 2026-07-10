@@ -189,12 +189,100 @@
        子视图：个人目标
        ============================================================ -->
   <block wx:if="{{currentView === 'goal'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">🎯</text>
-        <text class="placeholder-title">个人目标</text>
-        <text class="placeholder-desc">设置专注时长、月度目标和每日番茄数</text>
+    <view class="sub-view goal-sub-view">
+
+      <!-- 本月目标进度 -->
+      <view class="goal-progress-card">
+        <text class="goal-progress-label">本月目标进度</text>
+        <view class="goal-progress-row">
+          <text class="goal-progress-pct">{{monthlyGoalProgress}}</text>
+          <text class="goal-progress-unit">%</text>
+          <text class="goal-progress-sub">专注 {{monthlyGoalCurrent}}h / {{goalMonthlyTarget}}h</text>
+        </view>
+        <view class="goal-progress-track">
+          <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%"></view>
+        </view>
+        <text class="goal-progress-remain" wx:if="{{goalRemain > 0}}">还差 {{goalRemain}}h 达成目标，继续加油！</text>
+        <text class="goal-progress-remain" wx:else>🎉 恭喜你达成月度目标！</text>
       </view>
+
+      <!-- 单次专注时长 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">单次专注时长</text>
+        <text class="goal-setting-desc">每个番茄钟的默认专注时间</text>
+        <view class="goal-duration-grid">
+          <view
+            wx:for="{{[15,20,25,30,45,60]}}"
+            wx:key="*this"
+            class="goal-duration-btn {{item === goalFocusDuration ? 'duration-active' : ''}}"
+            bind:tap="onGoalFocusDuration"
+            data-value="{{item}}"
+          >
+            <text>{{item}}</text>
+          </view>
+        </view>
+        <text class="goal-setting-hint">当前：{{goalFocusDuration}} 分钟 / 个番茄</text>
+      </view>
+
+      <!-- 月度专注目标 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">月度专注目标</text>
+        <text class="goal-setting-desc">每月计划专注的总小时数</text>
+        <view class="goal-stepper-row">
+          <view class="goal-stepper-btn goal-stepper-sub" bind:tap="onGoalMonthlySub">
+            <text class="stepper-sign">−</text>
+          </view>
+          <view class="goal-stepper-value-wrap">
+            <text class="goal-stepper-value">{{goalMonthlyTarget}}</text>
+            <text class="goal-stepper-unit">小时</text>
+          </view>
+          <view class="goal-stepper-btn goal-stepper-add" bind:tap="onGoalMonthlyAdd">
+            <text class="stepper-sign">+</text>
+          </view>
+        </view>
+        <view class="goal-preset-row">
+          <view
+            wx:for="{{[20,40,60,80,100]}}"
+            wx:key="*this"
+            class="goal-preset-btn {{item === goalMonthlyTarget ? 'preset-active' : ''}}"
+            bind:tap="onGoalMonthlyPreset"
+            data-value="{{item}}"
+          >
+            <text>{{item}}h</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 每日番茄目标 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">每日番茄目标</text>
+        <text class="goal-setting-desc">每天计划完成的番茄数量</text>
+        <view class="goal-stepper-row">
+          <view class="goal-stepper-btn goal-stepper-sub" bind:tap="onGoalDailySub">
+            <text class="stepper-sign">−</text>
+          </view>
+          <view class="goal-daily-display">
+            <text wx:for="{{goalDailyDisplay}}" wx:key="index" class="goal-daily-emoji">{{item}}</text>
+            <text wx:if="{{goalDailyTarget > 10}}" class="goal-daily-overflow">+{{goalDailyTarget - 10}}</text>
+          </view>
+          <view class="goal-stepper-btn goal-stepper-add" bind:tap="onGoalDailyAdd">
+            <text class="stepper-sign">+</text>
+          </view>
+        </view>
+        <text class="goal-setting-hint">每天 {{goalDailyTarget}} 个番茄 = {{goalDailyTarget * goalFocusDuration}} 分钟</text>
+      </view>
+
+      <!-- 保存按钮 -->
+      <view class="goal-save-section">
+        <view
+          class="goal-save-btn {{goalSaved ? 'goal-save-done' : ''}}"
+          bind:tap="onGoalSave"
+        >
+          <text>{{goalSaved ? '✓ 目标已保存' : '保存设置'}}</text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 
