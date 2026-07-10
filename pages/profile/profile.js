@@ -169,6 +169,9 @@ Page({
         nickName: userInfo.nickName || '微信用户',
       });
 
+      // 从 settings 同步开关状态
+      this._syncSwitchState(settings);
+
       // 登录成功后异步加载统计数据
       this._loadStats();
     } catch (err) {
@@ -216,11 +219,29 @@ Page({
     }
   },
 
+  /** 从 settings 同步三个开关的状态 */
+  _syncSwitchState(settings) {
+    if (!settings) return;
+    const map = { notification: 'notificationEnabled', sound: 'soundEnabled', vibration: 'vibrationEnabled' };
+    const items = this.data.settingMenu.map(item => {
+      if (item.type === 'switch' && map[item.key] !== undefined) {
+        const defaultValue = item.key === 'vibration' ? false : true;
+        return { ...item, enabled: settings[map[item.key]] !== undefined ? !!settings[map[item.key]] : defaultValue };
+      }
+      return item;
+    });
+    this.setData({ settingMenu: items });
+  },
+
   _setLoggedOut() {
     clearLoginState();
     app.globalData.userInfo = null;
     app.globalData.isLoggedIn = false;
-    this.setData({ isLoggedIn: false, userInfo: null, settings: null });
+    this.setData({ isLoggedIn: false, userInfo: null, settings: null, settingMenu: [
+      { icon: '🔔', label: '消息通知', desc: '番茄完成时推送提醒', type: 'switch', key: 'notification', enabled: true },
+      { icon: '🔊', label: '音效', desc: '计时结束铃声提示', type: 'switch', key: 'sound', enabled: true },
+      { icon: '📳', label: '振动', desc: '计时结束震动提示', type: 'switch', key: 'vibration', enabled: false },
+    ] });
   },
 
   // 未登录时点击头像跳转登录页
@@ -435,15 +456,44 @@ Page({
     }
   },
 
-  onSwitchTap(e) {
+  async onSwitchTap(e) {
     const key = e.currentTarget.dataset.key;
-    const items = this.data.settingMenu.map(item => {
+    const map = { notification: 'notificationEnabled', sound: 'soundEnabled', vibration: 'vibrationEnabled' };
+    const field = map[key];
+    if (!field) return;
+
+    // 先乐观更新 UI
+    const oldItems = this.data.settingMenu;
+    const newItems = oldItems.map(item => {
       if (item.key === key && item.type === 'switch') {
         return { ...item, enabled: !item.enabled };
       }
       return item;
     });
-    this.setData({ settingMenu: items });
+    this.setData({ settingMenu: newItems });
+
+    // 计算新值
+    const toggledItem = newItems.find(item => item.key === key);
+    const newValue = toggledItem ? toggledItem.enabled : false;
+
+    // 持久化到后端
+    try {
+      const res = await userAPI.updateSettings({ [field]: newValue });
+      if (res.code === 0) {
+        // 同步到 settings 缓存
+        const settings = { ...(this.data.settings || {}), [field]: newValue };
+        this.setData({ settings });
+      } else {
+        // API 失败，回滚
+        this.setData({ settingMenu: oldItems });
+        wx.showToast({ title: '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      // 网络异常，回滚
+      this.setData({ settingMenu: oldItems });
+      console.warn('[profile] switch save failed:', err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
   },
 
   onLogout() {
