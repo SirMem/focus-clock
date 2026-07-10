@@ -290,12 +290,76 @@
        子视图：成就勋章
        ============================================================ -->
   <block wx:if="{{currentView === 'achievements'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">🏆</text>
-        <text class="placeholder-title">成就勋章</text>
-        <text class="placeholder-desc">查看已解锁和待解锁的成就徽章</text>
+    <view class="sub-view achievement-sub-view">
+
+      <!-- 摘要栏 -->
+      <view class="achievement-summary">
+        <text class="achievement-summary-icon">🏆</text>
+        <view class="achievement-summary-info">
+          <text class="achievement-summary-count">{{achievementEarnedCount}} / {{achievementTotalCount}} 个</text>
+          <text class="achievement-summary-pct">已解锁全部成就的 {{achievementEarnedCount > 0 ? Math.round(achievementEarnedCount / achievementTotalCount * 100) : 0}}%</text>
+          <view class="achievement-summary-track">
+            <view class="achievement-summary-fill" style="width: {{achievementEarnedCount > 0 ? (achievementEarnedCount / achievementTotalCount * 100) : 0}}%"></view>
+          </view>
+        </view>
       </view>
+
+      <!-- 筛选标签 -->
+      <view class="achievement-filter-row">
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'all' ? 'filter-active' : ''}}"
+          data-filter="all"
+          bind:tap="onAchievementFilter"
+        >
+          <text>全部</text>
+        </view>
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'earned' ? 'filter-active' : ''}}"
+          data-filter="earned"
+          bind:tap="onAchievementFilter"
+        >
+          <text>已获得 {{achievementEarnedCount}}</text>
+        </view>
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'locked' ? 'filter-active' : ''}}"
+          data-filter="locked"
+          bind:tap="onAchievementFilter"
+        >
+          <text>未解锁 {{achievementTotalCount - achievementEarnedCount}}</text>
+        </view>
+      </view>
+
+      <!-- 勋章网格 -->
+      <view class="achievement-grid">
+        <view
+          wx:for="{{filteredAchievements}}"
+          wx:key="id"
+          class="achievement-card {{item.earned ? 'card-earned' : 'card-locked'}}"
+        >
+          <!-- 未解锁时显示锁 -->
+          <view wx:if="{{!item.earned}}" class="achievement-lock-overlay">
+            <text class="achievement-lock-icon">🔒</text>
+          </view>
+
+          <view class="achievement-card-icon-wrap {{item.earned ? 'icon-earned' : 'icon-locked'}}">
+            <text class="achievement-card-icon">{{item.icon}}</text>
+          </view>
+          <text class="achievement-card-name">{{item.name}}</text>
+          <text class="achievement-card-desc">{{item.desc}}</text>
+
+          <block wx:if="{{item.earned}}">
+            <text class="achievement-card-date">{{item.date}}</text>
+          </block>
+          <block wx:else>
+            <view class="achievement-card-progress-track">
+              <view class="achievement-card-progress-fill" style="width: {{item.progress || 0}}%"></view>
+            </view>
+            <text class="achievement-card-progress-pct">{{item.progress || 0}}%</text>
+          </block>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 

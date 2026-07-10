@@ -55,6 +55,26 @@ Page({
     goalSaved: false,
     goalDailyDisplay: ['🍅', '🍅', '🍅', '🍅'],
 
+    // ── 成就勋章子视图状态 ──
+    achievements: [
+      { id: 1, icon: '🔥', name: '坚持达人', desc: '连续专注 7 天', earned: true, date: '6月21日' },
+      { id: 2, icon: '⭐', name: '番茄收割机', desc: '累计完成 50 个番茄', earned: true, date: '6月18日' },
+      { id: 3, icon: '🧘', name: '心流状态', desc: '单日完成 10 个番茄', earned: true, date: '6月17日' },
+      { id: 4, icon: '📚', name: '学习狂人', desc: '学习类任务累计 20h', earned: true, date: '6月10日' },
+      { id: 5, icon: '🌅', name: '晨型人', desc: '连续 5 天 8 点前开始', earned: true, date: '6月5日' },
+      { id: 6, icon: '🏅', name: '月度冠军', desc: '单月专注超过 40h', earned: true, date: '5月31日' },
+      { id: 7, icon: '💎', name: '钻石专注', desc: '累计专注 200h', earned: false, progress: 64 },
+      { id: 8, icon: '🚀', name: '百日打卡', desc: '连续专注 100 天', earned: false, progress: 15 },
+      { id: 9, icon: '🎯', name: '目标猎人', desc: '连续 3 月达成目标', earned: false, progress: 33 },
+      { id: 10, icon: '🌙', name: '夜枭专注', desc: '21 点后完成 5 个番茄', earned: false, progress: 60 },
+      { id: 11, icon: '⚡', name: '闪电模式', desc: '单次专注不中断 2h', earned: false, progress: 0 },
+      { id: 12, icon: '🌍', name: '全球同步', desc: '与 100 人同时专注', earned: false, progress: 0 },
+    ],
+    achievementFilter: 'all',  // 'all' | 'earned' | 'locked'
+    filteredAchievements: [],
+    achievementEarnedCount: 6,
+    achievementTotalCount: 12,
+
     featureMenu: [
       { icon: '🎯', label: '个人目标', desc: '设置专注参数', key: 'goal' },
       { icon: '🤖', label: 'AI 教练', desc: '查看今日建议', key: 'coach', badge: '92分', badgeColor: '#34C759' },
@@ -106,6 +126,8 @@ Page({
     // 进入子视图时初始化对应数据
     if (view === 'goal') {
       this._initGoalView();
+    } else if (view === 'achievements') {
+      this._initAchievementsView();
     }
   },
 
@@ -436,6 +458,41 @@ Page({
       console.error('[profile] save goal failed:', err);
       wx.showToast({ title: '保存失败，请重试', icon: 'none' });
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  成就勋章子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initAchievementsView() {
+    const all = this.data.achievements;
+    const earnedCount = all.filter(a => a.earned).length;
+    this.setData({
+      achievementEarnedCount: earnedCount,
+      achievementTotalCount: all.length,
+      achievementFilter: 'all',
+    });
+    this._filterAchievements('all');
+  },
+
+  /** 根据筛选类型重新计算显示列表 */
+  _filterAchievements(filter) {
+    const all = this.data.achievements;
+    let filtered;
+    if (filter === 'earned') {
+      filtered = all.filter(a => a.earned);
+    } else if (filter === 'locked') {
+      filtered = all.filter(a => !a.earned);
+    } else {
+      filtered = all;
+    }
+    this.setData({ achievementFilter: filter, filteredAchievements: filtered });
+  },
+
+  onAchievementFilter(e) {
+    const filter = e.currentTarget.dataset.filter;
+    if (filter === this.data.achievementFilter) return; // 幂等
+    this._filterAchievements(filter);
   },
 
   onSettingsTap() {
