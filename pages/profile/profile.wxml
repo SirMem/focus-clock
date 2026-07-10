@@ -367,12 +367,103 @@
        子视图：主题设置
        ============================================================ -->
   <block wx:if="{{currentView === 'theme'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">🎨</text>
-        <text class="placeholder-title">主题设置</text>
-        <text class="placeholder-desc">切换浅色/深色模式、主题色和文字大小</text>
+    <view class="sub-view theme-sub-view">
+
+      <!-- 显示模式 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">显示模式</text>
+        <view class="theme-mode-row">
+          <!-- 浅色 -->
+          <view class="theme-mode-card {{themeMode === 'light' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="light">
+            <view class="theme-mode-preview" style="background: #F5F7FA;">
+              <view class="theme-preview-inner" style="background: #fff;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #1A1A2E; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'light' ? 'mode-label-active' : ''}}">☀️ 浅色</text>
+          </view>
+          <!-- 深色 -->
+          <view class="theme-mode-card {{themeMode === 'dark' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="dark">
+            <view class="theme-mode-preview" style="background: #1A1A2E;">
+              <view class="theme-preview-inner" style="background: #2A2A3E;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #fff; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'dark' ? 'mode-label-active' : ''}}">🌙 深色</text>
+          </view>
+          <!-- 跟随系统 -->
+          <view class="theme-mode-card {{themeMode === 'auto' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="auto">
+            <view class="theme-mode-preview" style="background: linear-gradient(135deg, #F5F7FA 50%, #1A1A2E 50%);">
+              <view class="theme-preview-inner" style="background: #fff;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #1A1A2E; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'auto' ? 'mode-label-active' : ''}}">✨ 跟随系统</text>
+          </view>
+        </view>
       </view>
+
+      <!-- 主题色 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">主题色</text>
+        <view class="theme-color-row">
+          <view
+            wx:for="{{['#4A90D9','#34C759','#FF9500','#FF3B30','#AF52DE','#FF2D55','#5AC8FA','#FFCC00']}}"
+            wx:key="*this"
+            class="theme-color-dot {{item === themeAccent ? 'color-active' : ''}}"
+            style="background: {{item}};"
+            bind:tap="onThemeAccent"
+            data-color="{{item}}"
+          >
+            <text wx:if="{{item === themeAccent}}" class="color-check">✓</text>
+          </view>
+        </view>
+        <view class="theme-color-preview">
+          <view class="theme-color-swatch" style="background: {{themeAccent}};">
+            <text class="theme-color-swatch-text">Aa</text>
+          </view>
+          <view class="theme-color-info">
+            <text class="theme-color-label">当前主题色</text>
+            <text class="theme-color-value">{{themeAccent}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 文字大小 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">文字大小</text>
+        <view class="theme-font-row">
+          <view
+            wx:for="{{[{l:'小',s:12},{l:'中',s:14},{l:'大',s:16},{l:'超大',s:18}]}}"
+            wx:key="s"
+            class="theme-font-btn {{item.s === themeFontSize ? 'font-active' : ''}}"
+            style="font-size: {{item.s}}px;"
+            bind:tap="onThemeFontSize"
+            data-size="{{item.s}}"
+          >
+            <text>{{item.l}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 保存 -->
+      <view class="theme-save-section">
+        <view
+          class="theme-save-btn {{themeSaved ? 'theme-save-done' : ''}}"
+          style="background: linear-gradient(135deg, #4A90D9, #667EEA);"
+          bind:tap="onThemeSave"
+        >
+          <text>{{themeSaved ? '✓ 主题已保存' : '应用主题'}}</text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 
@@ -380,12 +471,74 @@
        子视图：数据导出
        ============================================================ -->
   <block wx:if="{{currentView === 'export'}}">
-    <view class="sub-view">
-      <view class="sub-view-placeholder">
-        <text class="placeholder-icon">📊</text>
-        <text class="placeholder-title">数据导出</text>
-        <text class="placeholder-desc">选择范围和格式，导出专注记录</text>
+    <view class="sub-view export-sub-view">
+
+      <!-- 数据概览 -->
+      <view class="export-section-card">
+        <text class="export-section-title">数据概览</text>
+        <view class="export-stats-grid">
+          <view class="export-stat-item" wx:for="{{exportStats}}" wx:key="label">
+            <text class="export-stat-value">{{item.value}}</text>
+            <text class="export-stat-label">{{item.label}}</text>
+          </view>
+        </view>
       </view>
+
+      <!-- 导出范围 -->
+      <view class="export-section-card">
+        <text class="export-section-title">导出范围</text>
+        <view class="export-range-row">
+          <view
+            wx:for="{{[{k:'week',l:'最近 7 天'},{k:'month',l:'最近 30 天'},{k:'all',l:'全部数据'}]}}"
+            wx:key="k"
+            class="export-range-btn {{item.k === exportRange ? 'export-range-active' : ''}}"
+            bind:tap="onExportRange"
+            data-range="{{item.k}}"
+          >
+            <text>{{item.l}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 导出格式 -->
+      <view class="export-section-card">
+        <text class="export-section-title">导出格式</text>
+        <view class="export-format-list">
+          <view
+            wx:for="{{[{k:'csv',n:'CSV 表格',d:'Excel / Numbers 可直接打开',i:'📊'},{k:'json',n:'JSON 数据',d:'适合开发者和数据分析',i:'🔧'},{k:'pdf',n:'PDF 报告',d:'可打印的可视化报告',i:'📄'}]}}"
+            wx:key="k"
+            class="export-format-item {{item.k === exportFormat ? 'format-active' : ''}}"
+            bind:tap="onExportFormat"
+            data-format="{{item.k}}"
+          >
+            <text class="export-format-icon">{{item.i}}</text>
+            <view class="export-format-info">
+              <text class="export-format-name">{{item.n}}</text>
+              <text class="export-format-desc">{{item.d}}</text>
+            </view>
+            <view class="export-radio {{item.k === exportFormat ? 'radio-checked' : ''}}">
+              <view wx:if="{{item.k === exportFormat}}" class="radio-inner"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 导出按钮 -->
+      <view class="export-action-section">
+        <view
+          class="export-btn {{exportDone ? 'export-btn-done' : ''}}"
+          disabled="{{exporting || exportDone}}"
+          bind:tap="onExport"
+        >
+          <text wx:if="{{exportDone}}">✓ 导出成功，已保存到相册</text>
+          <text wx:elif="{{exporting}}">导出中...</text>
+          <text wx:else>
+            导出 {{exportFormat === 'csv' ? 'CSV' : exportFormat === 'json' ? 'JSON' : 'PDF'}} 文件
+          </text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
     </view>
   </block>
 

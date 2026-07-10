@@ -75,6 +75,23 @@ Page({
     achievementEarnedCount: 6,
     achievementTotalCount: 12,
 
+    // ── 主题设置子视图状态 ──
+    themeMode: 'light',
+    themeAccent: '#4A90D9',
+    themeFontSize: 14,
+    themeSaved: false,
+
+    // ── 数据导出子视图状态 ──
+    exportRange: 'month',
+    exportFormat: 'csv',
+    exporting: false,
+    exportDone: false,
+    exportStats: [
+      { label: '专注记录', value: '—' },
+      { label: '日记条目', value: '—' },
+      { label: '任务记录', value: '—' },
+    ],
+
     featureMenu: [
       { icon: '🎯', label: '个人目标', desc: '设置专注参数', key: 'goal' },
       { icon: '🤖', label: 'AI 教练', desc: '查看今日建议', key: 'coach', badge: '92分', badgeColor: '#34C759' },
@@ -128,6 +145,10 @@ Page({
       this._initGoalView();
     } else if (view === 'achievements') {
       this._initAchievementsView();
+    } else if (view === 'theme') {
+      this._initThemeView();
+    } else if (view === 'export') {
+      this._initExportView();
     }
   },
 
@@ -494,6 +515,97 @@ Page({
     if (filter === this.data.achievementFilter) return; // 幂等
     this._filterAchievements(filter);
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  主题设置子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initThemeView() {
+    this.setData({
+      themeMode: wx.getStorageSync('theme_mode') || 'light',
+      themeAccent: wx.getStorageSync('theme_accent') || '#4A90D9',
+      themeFontSize: wx.getStorageSync('theme_fontsize') || 14,
+      themeSaved: false,
+    });
+  },
+
+  onThemeMode(e) {
+    const mode = e.currentTarget.dataset.mode;
+    if (mode === this.data.themeMode) return;
+    this.setData({ themeMode: mode, themeSaved: false });
+  },
+
+  onThemeAccent(e) {
+    const color = e.currentTarget.dataset.color;
+    if (color === this.data.themeAccent) return;
+    this.setData({ themeAccent: color, themeSaved: false });
+  },
+
+  onThemeFontSize(e) {
+    const size = Number(e.currentTarget.dataset.size);
+    if (size === this.data.themeFontSize) return;
+    this.setData({ themeFontSize: size, themeSaved: false });
+  },
+
+  onThemeSave() {
+    try {
+      wx.setStorageSync('theme_mode', this.data.themeMode);
+      wx.setStorageSync('theme_accent', this.data.themeAccent);
+      wx.setStorageSync('theme_fontsize', this.data.themeFontSize);
+      this.setData({ themeSaved: true });
+      setTimeout(() => { this.setData({ themeSaved: false }); }, 2000);
+    } catch (err) {
+      console.warn('[profile] save theme failed:', err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  数据导出子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initExportView() {
+    // 从已有统计推算数据概览
+    const monthlyStats = this.data.summaryStats || [];
+    const records = monthlyStats[0] ? monthlyStats[0].value : '—';
+    this.setData({
+      exportRange: 'month',
+      exportFormat: 'csv',
+      exporting: false,
+      exportDone: false,
+      exportStats: [
+        { label: '专注记录', value: records },
+        { label: '日记条目', value: '45 篇' },
+        { label: '任务记录', value: '210 项' },
+      ],
+    });
+  },
+
+  onExportRange(e) {
+    const range = e.currentTarget.dataset.range;
+    if (range === this.data.exportRange) return;
+    this.setData({ exportRange: range });
+  },
+
+  onExportFormat(e) {
+    const fmt = e.currentTarget.dataset.format;
+    if (fmt === this.data.exportFormat) return;
+    this.setData({ exportFormat: fmt });
+  },
+
+  onExport() {
+    if (this.data.exporting || this.data.exportDone) return;
+    this.setData({ exporting: true });
+    setTimeout(() => {
+      this.setData({ exporting: false, exportDone: true });
+      wx.showToast({ title: '导出成功，已保存到相册', icon: 'success' });
+      setTimeout(() => {
+        this.setData({ exportDone: false });
+      }, 3000);
+    }, 2000);
+  },
+
+  /** 导出按钮文字 */
 
   onSettingsTap() {
     wx.showToast({ title: '设置', icon: 'none' });
