@@ -95,6 +95,26 @@ class DailySummaryRepo {
     return res.data;
   }
 
+  /**
+   * 更新当日汇总的 aiScore（原地赋值，非增量）
+   *
+   * 与 upsert 的 _.inc() 不同，aiScore 是每次重新计算的绝对值，
+   * 不应与旧值累加。当日无记录时不做操作，返回 null。
+   *
+   * @param {string} openId
+   * @param {string} date - YYYY-MM-DD
+   * @param {number} score - 0-100 的评分值
+   * @returns {Promise<object|null>}
+   */
+  async updateAiScore(openId, date, score) {
+    const existing = await this.collection.where({ _openid: openId, date }).get();
+    if (!existing.data.length) return null;
+
+    return this.collection.doc(existing.data[0]._id).update({
+      data: { aiScore: score, updatedAt: Date.now() },
+    });
+  }
+
 }
 
 module.exports = DailySummaryRepo;

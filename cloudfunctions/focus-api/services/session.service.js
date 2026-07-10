@@ -51,6 +51,7 @@ class SessionService {
    *   2. 如果是番茄钟（focus + isPomodoro），更新当日汇总
    *   3. 如果关联了 taskId，递增任务的 completedPomodoros
    *   4. 查询当日所有会话，计算累计统计
+   *   5. 🆕 不阻塞的异步 aiScore 写入（评分失败不影响主流程）
    *
    * P0-1: 步骤 2-3 失败时补偿删除步骤 1 的 session 记录，保证数据一致性。
    * P1-2: 步骤 3 递增后重新查询真实值，避免并发场景返回值不准。
@@ -124,6 +125,13 @@ class SessionService {
       const todayStats = this._calcTodayStats(todaySessions);
       console.log('[Session.complete] 步骤4: 统计完成', todayStats);
 
+      // ── 5. 🆕 不阻塞的异步 aiScore 写入 ──
+      if (isPomodoro) {
+        this._updateAiScoreAsync(openId).catch(err => {
+          console.warn('[Session.complete] aiScore 写入失败:', err.message);
+        });
+      }
+
       return {
         session: created,
         task: task || undefined,
@@ -196,6 +204,23 @@ class SessionService {
       _id: taskId,
       completedPomodoros: updated.data.completedPomodoros || 0,
     };
+  }
+
+  /**
+   * 计算并写入 Coach 评分到当日 daily_summaries
+   *
+   * 不阻塞主流程：调用方通过 .catch() 处理错误，不 throw。
+   * CoachService 延迟加载，避免构造时循环依赖。
+   *
+   * @param {string} openId
+   * @private
+   */
+  async _updateAiScoreAsync(openId) {
+    const CoachService = require('./coach.service');
+    const coach = CoachService.create();
+    const { score } = await coach.getScore(openId);
+    const dateStr = getDateStr();
+    await this.dailySummaryRepo.updateAiScore(openId, dateStr, score);
   }
 
   /**
