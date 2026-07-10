@@ -219,6 +219,10 @@ Page({
     this._loadStats();
   },
 
+  onShow() {
+    this._loadStats();
+  },
+
   async _loadStats() {
     this.setData({ loading: true });
     try {
