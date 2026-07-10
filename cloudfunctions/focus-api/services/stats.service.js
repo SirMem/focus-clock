@@ -148,10 +148,18 @@ class StatsService {
     let totalFocusMinutes = 0;
     let totalPomodoros = 0;
     let activeDays = 0;
+    const dailyBreakdown = [];
 
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${monthStr}-${String(d).padStart(2, '0')}`;
       const record = dateMap[dateStr];
+
+      // dailyBreakdown: 每天一条，无记录的日期填 0
+      dailyBreakdown.push({
+        date: dateStr,
+        focusMinutes: record ? (record.focusMinutes || 0) : 0,
+        pomodoroCount: record ? (record.pomodoroCount || 0) : 0,
+      });
 
       if (record) {
         totalFocusMinutes += record.focusMinutes || 0;
@@ -167,7 +175,41 @@ class StatsService {
       activeDays,
       totalDays,
       completionRate: Math.round((activeDays / totalDays) * 100) / 100,
+      dailyBreakdown,
     };
+  }
+
+  /**
+   * 获取今日专注小时分布
+   *
+   * 从 sessions 集合查询今日所有 focus 类 session，
+   * 按 startedAt 的小时（0-23）分桶，返回每小时专注分钟数。
+   *
+   * @param {string} openId
+   * @returns {Promise<{hourlyBreakdown: Array<{hour: number, focusMinutes: number}>}>}
+   */
+  async getTodayDetail(openId) {
+    const sessions = await this.sessionRepo.getTodaySessions(openId);
+
+    // 初始化 24 个 bucket，全部填 0
+    const buckets = new Array(24).fill(0);
+
+    for (const s of sessions) {
+      // 只统计 focus 类 session
+      if (s.mode !== 'focus') continue;
+
+      const startDate = new Date(s.startedAt);
+      const hour = startDate.getHours();
+      const minutes = Math.round((s.duration || 0) / 60);
+      buckets[hour] += minutes;
+    }
+
+    const hourlyBreakdown = buckets.map((minutes, hour) => ({
+      hour,
+      focusMinutes: minutes,
+    }));
+
+    return { hourlyBreakdown };
   }
 
   /**

@@ -22,6 +22,16 @@ module.exports = (app) => {
   });
 
   // ═══════════════════════════════════════════════════
+  //  stats/today/detail — 今日专注小时分布
+  // ═══════════════════════════════════════════════════
+
+  app.router('stats/today/detail', async (ctx) => {
+    const service = StatsService.create();
+    const result = await service.getTodayDetail(ctx.OPENID);
+    succ(ctx, result);
+  });
+
+  // ═══════════════════════════════════════════════════
   //  stats/weekly
   // ═══════════════════════════════════════════════════
 

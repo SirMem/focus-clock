@@ -208,6 +208,7 @@ Page({
     todayStats: null,
     weeklyStats: null,
     monthlyStats: null,
+    todayDetail: null,
   },
 
   onLoad() {
@@ -227,25 +228,34 @@ Page({
     this.setData({ loading: true });
     try {
       const now = new Date();
-      const [todayRes, weeklyRes, monthlyRes, heatmapRes] = await Promise.all([
+      const [todayRes, weeklyRes, monthlyRes, heatmapRes, todayDetailRes] = await Promise.all([
         statsAPI.today(),
         statsAPI.weekly(),
         statsAPI.monthly(),
         statsAPI.heatmap(now.getFullYear(), now.getMonth() + 1),
+        statsAPI.todayDetail(),
       ]);
 
       const today = extractData(todayRes, {});
       const weekly = extractData(weeklyRes, {});
       const monthly = extractData(monthlyRes, {});
       const heatmap = extractData(heatmapRes, []);
+      const todayDetail = extractData(todayDetailRes, null);
       const didFail = todayRes.code !== 0 || weeklyRes.code !== 0 ||
                       monthlyRes.code !== 0 || heatmapRes.code !== 0;
+
+      // todayDetail: 新用户无 session 不是错误，用默认 24 个 0 兜底
+      const safeDetail = todayDetail || { hourlyBreakdown: [] };
+      if (!Array.isArray(safeDetail.hourlyBreakdown) || safeDetail.hourlyBreakdown.length !== 24) {
+        safeDetail.hourlyBreakdown = new Array(24).fill(0).map((_, i) => ({ hour: i, focusMinutes: 0 }));
+      }
 
       this.setData({
         todayStats: today || {},
         weeklyStats: weekly || {},
         monthlyStats: monthly || {},
         heatmapData: Array.isArray(heatmap) ? heatmap : [],
+        todayDetail: safeDetail,
       });
 
       if (didFail) {
@@ -284,7 +294,7 @@ Page({
     this.setData({ summaryCards });
   },
 
-  /** 更新折线图（P0 仅支持 weekly.dailyBreakdown；日/月明细暂为空） */
+  /** 更新折线图（日/周/月三视图） */
   _updateTrendChart() {
     this._refreshTrendChart(this.data.period);
   },
@@ -403,13 +413,20 @@ Page({
   },
 
   _refreshTrendChart(period) {
-    const { weeklyStats } = this.data;
+    const { weeklyStats, monthlyStats, todayDetail } = this.data;
     let data = [];
-    let title;
+    let title = '';
+    let seriesType = 'line';
 
     if (period === 'day') {
       title = '今日专注趋势';
-      // P0 后端暂不提供日内明细，保持空图表而不展示伪造趋势。
+      seriesType = 'bar';
+      if (todayDetail && Array.isArray(todayDetail.hourlyBreakdown)) {
+        data = todayDetail.hourlyBreakdown.map(d => ({
+          label: d.hour + '时',
+          value: d.focusMinutes || 0,
+        }));
+      }
     } else if (period === 'week') {
       title = '本周专注趋势';
       if (weeklyStats && Array.isArray(weeklyStats.dailyBreakdown)) {
@@ -420,7 +437,12 @@ Page({
       }
     } else {
       title = '本月专注趋势';
-      // P0 后端暂不提供月内趋势明细，保持空图表而不展示伪造趋势。
+      if (monthlyStats && Array.isArray(monthlyStats.dailyBreakdown)) {
+        data = monthlyStats.dailyBreakdown.map(d => ({
+          label: (d.date || '').slice(-2) + '日',
+          value: d.focusMinutes || 0,
+        }));
+      }
     }
 
     this.setData({ trendTitle: title });
@@ -429,7 +451,7 @@ Page({
     if (ecComp && ecComp.chart) {
       ecComp.chart.setOption({
         xAxis: { data: data.map(d => d.label) },
-        series: [{ data: data.map(d => d.value) }],
+        series: [{ type: seriesType, data: data.map(d => d.value) }],
       });
     }
   },

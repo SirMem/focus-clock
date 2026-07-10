@@ -4,6 +4,9 @@ const statsAPI = {
   today() {
     return callAPI('stats/today');
   },
+  todayDetail() {
+    return callAPI('stats/today/detail');
+  },
   weekly() {
     return callAPI('stats/weekly');
   },
