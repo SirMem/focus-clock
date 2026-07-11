@@ -44,17 +44,20 @@ function buildWeeklyStats(weekly) {
 }
 
 /**
- * 将 insights 转为成就展示格式（P0: achievement 类型优先）
+ * 从 achievement/list API 响应中取前 3 个已获得的勋章。
+ *
+ * achievementData 结构: { achievements: Array, summary: { earned, total } }
+ * 每个 achievement 字段: { id, name, desc, icon, earned, date, progress }
  */
-function buildAchievements(insights) {
-  if (!Array.isArray(insights)) return [];
-  return insights
-    .filter(item => item.type === 'achievement')
+function buildAchievements(achievementData) {
+  if (!achievementData || !Array.isArray(achievementData.achievements)) return [];
+  return achievementData.achievements
+    .filter(item => item.earned)
     .slice(0, 3)
     .map(item => ({
       icon: item.icon || '⭐',
-      label: item.text.slice(0, 8),
-      value: item.value || '达成',
+      label: (item.name || '').slice(0, 8),
+      value: item.date || '达成',
       color: '#4A90D9',
       bgColor: '#EBF4FF',
     }));
@@ -140,17 +143,19 @@ Page({
   async _loadCoachData() {
     this.setData({ loading: true, aiReportLoading: true });
     try {
-      const [scoreRes, tipRes, weeklyRes, reportRes] = await Promise.all([
+      const [scoreRes, tipRes, weeklyRes, reportRes, achievementRes] = await Promise.all([
         coachAPI.score(),
         coachAPI.tip(),
         statsAPI.weekly(),
         coachAPI.weeklyReport(),
+        coachAPI.achievements(),
       ]);
 
       const scoreData = extractData(scoreRes, null);
       const tipData = extractData(tipRes, null);
       const weeklyData = extractData(weeklyRes, null);
       const reportData = extractData(reportRes, null);
+      const achievementData = extractData(achievementRes, null);
 
       const didFail = !scoreData || !tipData || !weeklyData;
 
@@ -161,10 +166,8 @@ Page({
       const aiEmotionInsight = reportData ? (reportData.emotionInsight || '') : '';
       const reportGeneratedBy = reportData ? (reportData.generatedBy || 'rule') : 'rule';
 
-      // ── 成就优先使用 AI highlights，fallback 到规则引擎 insights ──
-      const achievements = aiHighlights.length > 0
-        ? aiHighlights
-        : buildAchievements(scoreData ? scoreData.insights : []);
+      // ── 成就勋章：优先从 achievement/list 获取真实数据 ──
+      const achievements = buildAchievements(achievementData);
 
       // ── 趋势洞察文案优先用 AI 报告开头，fallback 到规则引擎 tip ──
       const insightText = aiReport
@@ -238,11 +241,22 @@ Page({
   },
 
   onViewAllAchievements() {
-    wx.showToast({ title: '全部成就', icon: 'none' });
+    wx.navigateTo({ url: '/pages/profile/profile?view=achievements' });
   },
 
   onViewWeeklyReport() {
-    wx.showToast({ title: '查看完整周报', icon: 'none' });
+    const report = this.data.aiReport;
+    if (!report) {
+      wx.showToast({ title: '暂无周报数据', icon: 'none' });
+      return;
+    }
+    wx.showModal({
+      title: '完整周报',
+      content: report,
+      showCancel: false,
+      confirmText: '关闭',
+      confirmColor: '#4A90D9',
+    });
   },
 
   onCoachSettings() {
@@ -251,5 +265,10 @@ Page({
 
   onMenuTap() {
     wx.showToast({ title: '更多功能', icon: 'none' });
+  },
+
+  /** 返回上一页 */
+  onNavigateBack() {
+    wx.navigateBack();
   },
 });

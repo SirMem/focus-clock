@@ -115,14 +115,25 @@ Page({
     ],
   },
 
-  onLoad() {
+  onLoad(options) {
     const sys = wx.getWindowInfo();
     const statusBarHeight = sys.statusBarHeight || 44;
     this.setData({ statusBarHeight, capsuleHeight: 44 });
+
+    // 支持从外部跳转到子视图（如教练页→成就勋章）
+    if (options && options.view) {
+      this._pendingView = options.view;
+    }
   },
 
-  onShow() {
-    this._loadProfile();
+  async onShow() {
+    await this._loadProfile();
+
+    // 如果有待跳转子视图，在数据加载完成后跳转
+    if (this._pendingView) {
+      this.navigateTo(this._pendingView);
+      this._pendingView = null;
+    }
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -263,6 +274,7 @@ Page({
         ],
         monthlyGoalCurrent: monthlyCurrent,
         monthlyGoalProgress: progress,
+        goalProgressWidth: progress + '%',
         goalRemain: remain,
       });
     } catch (err) {
@@ -406,7 +418,7 @@ Page({
     const monthlyCurrent = this.data.monthlyGoalCurrent;
     const progress = monthlyTarget > 0 ? Math.min(100, Math.round((monthlyCurrent / monthlyTarget) * 100)) : 0;
     const remain = Math.max(0, Math.round((monthlyTarget - monthlyCurrent) * 10) / 10);
-    this.setData({ monthlyGoalProgress: progress, goalRemain: remain });
+    this.setData({ monthlyGoalProgress: progress, goalProgressWidth: progress + '%', goalRemain: remain });
   },
 
   /** 计算每日番茄 🍅 显示数组 */
@@ -509,10 +521,23 @@ Page({
       const data = res.data || {};
       const achievements = data.achievements || [];
       const summary = data.summary || { earned: 0, total: achievements.length || 12 };
+      const total = summary.total || 1;
+      const earned = summary.earned;
+      // 预计算百分比（WXML 不支持 Math.round）
+      const achievementPct = total > 0 ? Math.round(earned / total * 100) : 0;
+      // 预计算带 % 的宽度值（WXML 不允许 style 中 % 紧接 }}
+      const achievementFillWidth = total > 0 ? (earned / total * 100) + '%' : '0%';
+      // 每个勋章预计算 progressWidth（带 % 后缀）
+      const enriched = achievements.map(a => ({
+        ...a,
+        progressWidth: (a.progress || 0) + '%',
+      }));
       this.setData({
-        achievements,
-        achievementEarnedCount: summary.earned,
-        achievementTotalCount: summary.total,
+        achievements: enriched,
+        achievementEarnedCount: earned,
+        achievementTotalCount: total,
+        achievementPct,
+        achievementFillWidth,
       });
       this._filterAchievements('all');
     } catch (err) {

@@ -4,8 +4,8 @@
   <view class="nav-shell">
     <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
     <view class="nav-bar" style="height: {{capsuleHeight}}px;">
-      <view class="nav-left">
-        <view class="nav-placeholder"></view>
+      <view class="nav-left" bind:tap="onNavigateBack">
+        <t-icon name="chevron-left" size="44rpx" color="#1A1A2E" />
       </view>
       <view class="nav-title">AI 教练</view>
       <view class="nav-right" bind:tap="onMenuTap">
@@ -176,7 +176,7 @@
           <view class="weekly-bar-track">
             <view
               class="weekly-bar-fill"
-              style="height: {{item.height}}%;"
+              style="height: {{item.height}};"
             ></view>
           </view>
           <text class="weekly-bar-label">{{item.day}}</text>

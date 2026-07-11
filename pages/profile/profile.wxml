@@ -98,7 +98,7 @@
         </view>
         <text class="goal-subtitle">专注 {{monthlyGoalCurrent}}h / {{monthlyGoalTarget}}h</text>
         <view class="goal-progress-bar">
-          <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%"></view>
+          <view class="goal-progress-fill" style="width: {{goalProgressWidth}}"></view>
         </view>
         <text class="goal-remain">还需 {{goalRemain}}h 达成目标</text>
       </view>
@@ -200,7 +200,7 @@
           <text class="goal-progress-sub">专注 {{monthlyGoalCurrent}}h / {{goalMonthlyTarget}}h</text>
         </view>
         <view class="goal-progress-track">
-          <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%"></view>
+          <view class="goal-progress-fill" style="width: {{goalProgressWidth}}"></view>
         </view>
         <text class="goal-progress-remain" wx:if="{{goalRemain > 0}}">还差 {{goalRemain}}h 达成目标，继续加油！</text>
         <text class="goal-progress-remain" wx:else>🎉 恭喜你达成月度目标！</text>
@@ -297,9 +297,9 @@
         <text class="achievement-summary-icon">🏆</text>
         <view class="achievement-summary-info">
           <text class="achievement-summary-count">{{achievementEarnedCount}} / {{achievementTotalCount}} 个</text>
-          <text class="achievement-summary-pct">已解锁全部成就的 {{achievementEarnedCount > 0 ? Math.round(achievementEarnedCount / achievementTotalCount * 100) : 0}}%</text>
+          <text class="achievement-summary-pct">已解锁全部成就的 {{achievementPct}}%</text>
           <view class="achievement-summary-track">
-            <view class="achievement-summary-fill" style="width: {{achievementEarnedCount > 0 ? (achievementEarnedCount / achievementTotalCount * 100) : 0}}%"></view>
+            <view class="achievement-summary-fill" style="width: {{achievementFillWidth}}"></view>
           </view>
         </view>
       </view>
@@ -352,7 +352,7 @@
           </block>
           <block wx:else>
             <view class="achievement-card-progress-track">
-              <view class="achievement-card-progress-fill" style="width: {{item.progress || 0}}%"></view>
+              <view class="achievement-card-progress-fill" style="width: {{item.progressWidth}}"></view>
             </view>
             <text class="achievement-card-progress-pct">{{item.progress || 0}}%</text>
           </block>

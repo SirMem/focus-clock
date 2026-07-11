@@ -150,6 +150,23 @@ class TaskService {
       }
     }
 
+    // [BUGFIX] 取消完成任务 → daily_summaries 递减 completedTasks
+    // 防止反复勾选/取消勾选导致 completedTasks 无限膨胀
+    const becameUndone = data.isDone === false && existing.isDone;
+    if (becameUndone) {
+      try {
+        const today = getDateStr();
+        const record = await this.dailySummaryRepo.findByDate(openId, today);
+        if (record && (record.completedTasks || 0) > 0) {
+          await this.dailySummaryRepo.upsert(openId, today, {
+            completedTasks: -1,  // 原子 -1（_.inc(-1)）
+          });
+        }
+      } catch (err) {
+        console.error('[TaskService.updateTask] daily_summaries 取消完成递减失败:', err.message);
+      }
+    }
+
     return result;
   }
 

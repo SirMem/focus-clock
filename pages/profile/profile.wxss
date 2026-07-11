@@ -978,7 +978,7 @@
 }
 
 .theme-mode-active .theme-mode-preview {
-  border-color: {{themeAccent}};  /* 用 JS 动态切换时不能引用变量，通过 class 表达选中态 */
+  border-color: #4A90D9;
   box-shadow: 0 4rpx 16rpx rgba(74, 144, 217, 0.2);
 }
 

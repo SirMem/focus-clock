@@ -127,9 +127,7 @@ class SessionService {
 
       // ── 5. 🆕 不阻塞的异步 aiScore 写入 ──
       if (isPomodoro) {
-        this._updateAiScoreAsync(openId).catch(err => {
-          console.warn('[Session.complete] aiScore 写入失败:', err.message);
-        });
+        this._updateAiScoreAsync(openId);
       }
 
       return {
@@ -216,11 +214,18 @@ class SessionService {
    * @private
    */
   async _updateAiScoreAsync(openId) {
-    const CoachService = require('./coach.service');
-    const coach = CoachService.create();
-    const { score } = await coach.getScore(openId);
-    const dateStr = getDateStr();
-    await this.dailySummaryRepo.updateAiScore(openId, dateStr, score);
+    console.log('[Session._updateAiScoreAsync] 开始异步计算 AI 评分', { openId });
+    try {
+      const CoachService = require('./coach.service');
+      const coach = CoachService.create();
+      const result = await coach.getScore(openId);
+      const dateStr = getDateStr();
+      console.log('[Session._updateAiScoreAsync] 评分计算完成', { openId, score: result.score, level: result.level, dateStr });
+      await this.dailySummaryRepo.updateAiScore(openId, dateStr, result.score);
+      console.log('[Session._updateAiScoreAsync] aiScore 写入成功', { openId, score: result.score, dateStr });
+    } catch (err) {
+      console.error('[Session._updateAiScoreAsync] 失败:', { openId, error: err.message, stack: err.stack?.split('\n').slice(0, 5).join('\n') });
+    }
   }
 
   /**
