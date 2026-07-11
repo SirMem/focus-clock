@@ -275,18 +275,21 @@
   <!-- ===== DetailView ===== -->
   <scroll-view wx:elif="{{view === 'detail' && selectedEntry}}" class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
 
-    <!-- 顶部栏：返回 + 日期 + 上下篇 -->
+    <!-- 顶部栏：返回 + 日期 + 上下篇 + 更多 -->
     <view class="dtl-header">
       <view class="dtl-back-btn" bind:tap="onDetailBack">
         <t-icon name="chevron-left" size="32rpx" color="#1A1A2E" />
       </view>
       <text class="dtl-header-title">{{selectedEntry.date}}</text>
-      <view class="dtl-nav-btns">
+      <view class="dtl-header-actions">
         <view class="dtl-nav-btn {{detailPrevEntry ? '' : 'dtl-nav-disabled'}}" bind:tap="onDetailPrev">
           <t-icon name="chevron-left" size="24rpx" color="{{detailPrevEntry ? '#1A1A2E' : '#D0D4DB'}}" />
         </view>
         <view class="dtl-nav-btn {{detailNextEntry ? '' : 'dtl-nav-disabled'}}" bind:tap="onDetailNext">
           <t-icon name="chevron-right" size="24rpx" color="{{detailNextEntry ? '#1A1A2E' : '#D0D4DB'}}" />
+        </view>
+        <view class="dtl-more-btn" bind:tap="onDetailMore">
+          <t-icon name="more" size="28rpx" color="#8A8A9A" />
         </view>
       </view>
     </view>
@@ -306,15 +309,15 @@
       <!-- 三指标统计 -->
       <view class="dtl-stats-row">
         <view class="dtl-stat-item">
-          <text class="dtl-stat-value">🍅 --</text>
+          <text class="dtl-stat-value">🍅 {{detailStats.pomodoroCount}}</text>
           <text class="dtl-stat-label">番茄数</text>
         </view>
         <view class="dtl-stat-item">
-          <text class="dtl-stat-value">⏱ --</text>
+          <text class="dtl-stat-value">⏱ {{detailStats.focusMinutes}}min</text>
           <text class="dtl-stat-label">专注时长</text>
         </view>
         <view class="dtl-stat-item">
-          <text class="dtl-stat-value">✅ --</text>
+          <text class="dtl-stat-value">✅ {{detailStats.completedTasks}}</text>
           <text class="dtl-stat-label">完成任务</text>
         </view>
       </view>

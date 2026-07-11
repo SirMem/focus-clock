@@ -732,6 +732,23 @@
   flex-shrink: 0;
 }
 
+.dtl-header-actions {
+  display: flex;
+  gap: 8rpx;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.dtl-more-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .dtl-nav-btn {
   width: 56rpx;
   height: 56rpx;

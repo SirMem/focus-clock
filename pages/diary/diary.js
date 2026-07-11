@@ -118,6 +118,7 @@ Page({
 
     // 日记详情
     selectedEntry: null,
+    detailStats: { pomodoroCount: '--', focusMinutes: '--', completedTasks: '--' },
     detailPrevEntry: null,
     detailNextEntry: null,
   },
@@ -164,7 +165,7 @@ Page({
   async _loadTodaySummary() {
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        taskAPI.list({ isDone: true }, 1, 20),
+        taskAPI.list({ filter: { isDone: true }, page: 1, pageSize: 20 }),
         statsAPI.today(),
       ]);
 
@@ -355,8 +356,8 @@ Page({
     }
   },
 
-  /** 打开详情视图，记录来自哪个视图 */
-  _openDetail(entry) {
+  /** 打开详情视图，加载当日统计 */
+  async _openDetail(entry) {
     const idx = this.data.historyEntries.findIndex(item => item.id === entry.id);
     const detailPrevEntry = idx < this.data.historyEntries.length - 1 ? this.data.historyEntries[idx + 1] : null;
     const detailNextEntry = idx > 0 ? this.data.historyEntries[idx - 1] : null;
@@ -364,9 +365,26 @@ Page({
       view: 'detail',
       prevView: this.data.view,
       selectedEntry: entry,
+      detailStats: { pomodoroCount: '--', focusMinutes: '--', completedTasks: '--' },
       detailPrevEntry,
       detailNextEntry,
     });
+
+    // 异步加载当日统计，失败不阻塞
+    try {
+      const statsRes = await statsAPI.today();
+      if (statsRes.code === 0 && statsRes.data) {
+        this.setData({
+          detailStats: {
+            pomodoroCount: statsRes.data.pomodoroCount ?? '--',
+            focusMinutes: statsRes.data.focusMinutes ?? '--',
+            completedTasks: statsRes.data.completedTasks ?? '--',
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('加载详情统计失败', err);
+    }
   },
 
   onDetailBack() {
@@ -391,6 +409,88 @@ Page({
       success(res) {
         const action = res.tapIndex === 0 ? '日期筛选' : '心情筛选';
         wx.showToast({ title: `${action}功能开发中`, icon: 'none' });
+      },
+    });
+  },
+
+  // ===== 日记编辑/删除（Ticket 07） =====
+
+  onDetailMore() {
+    wx.showActionSheet({
+      itemList: ['编辑日记', '删除日记'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          this._editDiary();
+        } else if (res.tapIndex === 1) {
+          this._deleteDiary();
+        }
+      },
+    });
+  },
+
+  _editDiary() {
+    const entry = this.data.selectedEntry;
+    if (!entry) return;
+    wx.showModal({
+      title: '编辑日记',
+      editable: true,
+      content: entry.content,
+      placeholderText: '修改日记内容...',
+      success: async (modalRes) => {
+        if (!modalRes.confirm) return;
+        const trimmed = (modalRes.content || '').trim();
+        if (!trimmed) {
+          wx.showToast({ title: '内容不能为空', icon: 'none' });
+          return;
+        }
+        wx.showLoading({ title: '保存中...' });
+        try {
+          const apiRes = await diaryAPI.update(entry.id, { content: trimmed });
+          wx.hideLoading();
+          if (apiRes.code === 0) {
+            wx.showToast({ title: '更新成功', icon: 'success' });
+            await this._loadEntries();
+            // 重新加载详情页
+            const updated = this.data.historyEntries.find(e => e.id === entry.id);
+            if (updated) this._openDetail(updated);
+          } else {
+            wx.showToast({ title: apiRes.message || '更新失败', icon: 'none' });
+          }
+        } catch (err) {
+          wx.hideLoading();
+          console.error('[diary] update failed:', err);
+          wx.showToast({ title: '更新失败', icon: 'none' });
+        }
+      },
+    });
+  },
+
+  _deleteDiary() {
+    const entry = this.data.selectedEntry;
+    if (!entry) return;
+    wx.showModal({
+      title: '确认删除',
+      content: '删除后无法恢复，确定要删除这篇日记吗？',
+      confirmText: '删除',
+      confirmColor: '#FF3B30',
+      success: async (modalRes) => {
+        if (!modalRes.confirm) return;
+        wx.showLoading({ title: '删除中...' });
+        try {
+          const apiRes = await diaryAPI.delete(entry.id);
+          wx.hideLoading();
+          if (apiRes.code === 0) {
+            wx.showToast({ title: '已删除', icon: 'success' });
+            await this._loadEntries();
+            this.setData({ view: 'write', selectedEntry: null });
+          } else {
+            wx.showToast({ title: apiRes.message || '删除失败', icon: 'none' });
+          }
+        } catch (err) {
+          wx.hideLoading();
+          console.error('[diary] delete failed:', err);
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
       },
     });
   },
