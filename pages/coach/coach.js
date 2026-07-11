@@ -105,7 +105,36 @@ Page({
     const sys = wx.getWindowInfo();
     const statusBarHeight = sys.statusBarHeight || 44;
     this.setData({ statusBarHeight, capsuleHeight: 44 });
+    // 恢复本地持久化的建议状态
+    this._restorePersistedState();
     this._loadCoachData();
+  },
+
+  /**
+   * 从本地 Storage 恢复已采纳建议和历史记录
+   */
+  _restorePersistedState() {
+    try {
+      const acceptedKey = 'coach_accepted_suggestion';
+      const historyKey = 'coach_history';
+
+      const suggestionAccepted = wx.getStorageSync(acceptedKey);
+      const coachingHistory = wx.getStorageSync(historyKey);
+
+      const patch = {};
+      if (suggestionAccepted === true) {
+        patch.suggestionAccepted = true;
+      }
+      if (Array.isArray(coachingHistory) && coachingHistory.length > 0) {
+        patch.coachingHistory = coachingHistory;
+      }
+
+      if (Object.keys(patch).length > 0) {
+        this.setData(patch);
+      }
+    } catch (err) {
+      console.warn('[coach] 读取持久化建议状态失败', err);
+    }
   },
 
   async _loadCoachData() {
@@ -142,6 +171,11 @@ Page({
         ? aiReport.slice(0, 120) + (aiReport.length > 120 ? '...' : '')
         : (tipData ? tipData.tip : '');
 
+      // 保持已恢复的历史建议列表，不被空数组覆盖
+      const coachingHistory = this.data.coachingHistory && this.data.coachingHistory.length > 0
+        ? this.data.coachingHistory
+        : [];
+
       this.setData({
         score: scoreData ? scoreData.score : 0,
         level: scoreData ? scoreData.level : '新手',
@@ -149,7 +183,7 @@ Page({
         weeklyTrend: weeklyData ? buildWeeklyTrend(weeklyData.dailyBreakdown) : [],
         weeklyStats: weeklyData ? buildWeeklyStats(weeklyData) : [],
         achievements,
-        coachingHistory: [],
+        coachingHistory,
         aiReport,
         aiHighlights,
         aiSuggestion,
@@ -172,7 +206,34 @@ Page({
 
   onAcceptSuggestion() {
     if (this.data.suggestionAccepted) return;
-    this.setData({ suggestionAccepted: true });
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const suggestionText = this.data.suggestionText || '';
+
+    // 构建新的历史记录项
+    const historyItem = {
+      text: suggestionText,
+      date: dateStr,
+      accepted: true,
+    };
+
+    // 更新历史列表（新记录在开头）
+    const coachingHistory = [historyItem, ...this.data.coachingHistory];
+
+    // 持久化到本地 Storage
+    try {
+      wx.setStorageSync('coach_accepted_suggestion', true);
+      wx.setStorageSync('coach_history', coachingHistory);
+    } catch (err) {
+      console.warn('[coach] 持久化建议状态失败', err);
+    }
+
+    this.setData({
+      suggestionAccepted: true,
+      coachingHistory,
+    });
+
     wx.showToast({ title: '已采纳建议', icon: 'success' });
   },
 
@@ -185,7 +246,7 @@ Page({
   },
 
   onCoachSettings() {
-    wx.showToast({ title: 'AI 教练设置', icon: 'none' });
+    wx.navigateTo({ url: '/pages/coach-settings/coach-settings' });
   },
 
   onMenuTap() {

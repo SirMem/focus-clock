@@ -35,7 +35,7 @@
           </view>
         </view>
         <view class="hero-avatar">
-          <text class="hero-avatar-text">🤖</text>
+          <image class="hero-avatar-img" src="/images/coach-bear.svg" mode="aspectFit" />
         </view>
       </view>
     </view>
