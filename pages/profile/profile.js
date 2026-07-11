@@ -249,11 +249,23 @@ Page({
     if (!this.data.isLoggedIn) return;
 
     try {
-      const [monthlyRes] = await Promise.all([
+      const [monthlyRes, scoreRes] = await Promise.all([
         statsAPI.monthly(),
+        coachAPI.score(),
       ]);
 
       const monthly = extractData(monthlyRes, {});
+      const scoreData = extractData(scoreRes, null);
+
+      // 更新 AI 教练 badge（动态评分，不再写死 "92分"）
+      if (scoreData && scoreData.score != null) {
+        const menu = [...this.data.featureMenu];
+        const coachIdx = menu.findIndex(m => m.key === 'coach');
+        if (coachIdx >= 0) {
+          menu[coachIdx] = { ...menu[coachIdx], badge: `${scoreData.score}分` };
+          this.setData({ featureMenu: menu });
+        }
+      }
 
       // 本月目标数据
       const totalMinutes = monthly.totalFocusMinutes || 0;
@@ -786,7 +798,7 @@ Page({
     const VIEW_KEYS = ['goal', 'achievements', 'theme', 'export', 'help', 'about'];
 
     if (key === 'coach') {
-      wx.redirectTo({ url: '/pages/coach/coach' });
+      wx.navigateTo({ url: '/pages/coach/coach' });
     } else if (VIEW_KEYS.includes(key)) {
       this.navigateTo(key);
     } else {

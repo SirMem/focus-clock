@@ -176,7 +176,7 @@
           <view class="weekly-bar-track">
             <view
               class="weekly-bar-fill"
-              style="height: {{item.height}};"
+              style="height: {{item.height}}%;"
             ></view>
           </view>
           <text class="weekly-bar-label">{{item.day}}</text>
