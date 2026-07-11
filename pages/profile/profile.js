@@ -1,6 +1,8 @@
 const app = getApp();
 const userAPI = require('../../miniprogram/api/user.api');
 const statsAPI = require('../../miniprogram/api/stats.api');
+const coachAPI = require('../../miniprogram/api/coach.api');
+const exportAPI = require('../../miniprogram/api/export.api');
 const { getLoginState, saveLoginState, clearLoginState } = require('../../miniprogram/api/auth');
 const { formatDuration } = require('../../miniprogram/api/mappers');
 
@@ -56,24 +58,11 @@ Page({
     goalDailyDisplay: ['🍅', '🍅', '🍅', '🍅'],
 
     // ── 成就勋章子视图状态 ──
-    achievements: [
-      { id: 1, icon: '🔥', name: '坚持达人', desc: '连续专注 7 天', earned: true, date: '6月21日' },
-      { id: 2, icon: '⭐', name: '番茄收割机', desc: '累计完成 50 个番茄', earned: true, date: '6月18日' },
-      { id: 3, icon: '🧘', name: '心流状态', desc: '单日完成 10 个番茄', earned: true, date: '6月17日' },
-      { id: 4, icon: '📚', name: '学习狂人', desc: '学习类任务累计 20h', earned: true, date: '6月10日' },
-      { id: 5, icon: '🌅', name: '晨型人', desc: '连续 5 天 8 点前开始', earned: true, date: '6月5日' },
-      { id: 6, icon: '🏅', name: '月度冠军', desc: '单月专注超过 40h', earned: true, date: '5月31日' },
-      { id: 7, icon: '💎', name: '钻石专注', desc: '累计专注 200h', earned: false, progress: 64 },
-      { id: 8, icon: '🚀', name: '百日打卡', desc: '连续专注 100 天', earned: false, progress: 15 },
-      { id: 9, icon: '🎯', name: '目标猎人', desc: '连续 3 月达成目标', earned: false, progress: 33 },
-      { id: 10, icon: '🌙', name: '夜枭专注', desc: '21 点后完成 5 个番茄', earned: false, progress: 60 },
-      { id: 11, icon: '⚡', name: '闪电模式', desc: '单次专注不中断 2h', earned: false, progress: 0 },
-      { id: 12, icon: '🌍', name: '全球同步', desc: '与 100 人同时专注', earned: false, progress: 0 },
-    ],
+    achievements: [],
     achievementFilter: 'all',  // 'all' | 'earned' | 'locked'
     filteredAchievements: [],
-    achievementEarnedCount: 6,
-    achievementTotalCount: 12,
+    achievementEarnedCount: 0,
+    achievementTotalCount: 0,
 
     // ── 主题设置子视图状态 ──
     themeMode: 'light',
@@ -506,14 +495,29 @@ Page({
   // ═══════════════════════════════════════════════════════════
 
   _initAchievementsView() {
-    const all = this.data.achievements;
-    const earnedCount = all.filter(a => a.earned).length;
-    this.setData({
-      achievementEarnedCount: earnedCount,
-      achievementTotalCount: all.length,
-      achievementFilter: 'all',
-    });
-    this._filterAchievements('all');
+    this.setData({ achievementFilter: 'all', filteredAchievements: [] });
+    this._loadAchievements();
+  },
+
+  async _loadAchievements() {
+    try {
+      const res = await coachAPI.achievements();
+      if (res.code !== 0) {
+        console.warn('[profile] load achievements failed:', res.message);
+        return;
+      }
+      const data = res.data || {};
+      const achievements = data.achievements || [];
+      const summary = data.summary || { earned: 0, total: achievements.length || 12 };
+      this.setData({
+        achievements,
+        achievementEarnedCount: summary.earned,
+        achievementTotalCount: summary.total,
+      });
+      this._filterAchievements('all');
+    } catch (err) {
+      console.warn('[profile] load achievements error:', err);
+    }
   },
 
   /** 根据筛选类型重新计算显示列表 */
@@ -602,20 +606,38 @@ Page({
   // ═══════════════════════════════════════════════════════════
 
   _initExportView() {
-    // 从已有统计推算数据概览
-    const monthlyStats = this.data.summaryStats || [];
-    const records = monthlyStats[0] ? monthlyStats[0].value : '—';
     this.setData({
       exportRange: 'month',
       exportFormat: 'csv',
       exporting: false,
       exportDone: false,
       exportStats: [
-        { label: '专注记录', value: records },
-        { label: '日记条目', value: '45 篇' },
-        { label: '任务记录', value: '210 项' },
+        { label: '专注记录', value: '—' },
+        { label: '日记条目', value: '—' },
+        { label: '任务记录', value: '—' },
       ],
     });
+    this._loadExportStats();
+  },
+
+  async _loadExportStats() {
+    try {
+      const res = await exportAPI.getStats();
+      if (res.code !== 0) {
+        console.warn('[profile] load export stats failed:', res.message);
+        return;
+      }
+      const data = res.data || {};
+      this.setData({
+        exportStats: [
+          { label: '专注记录', value: (data.sessionCount ?? '—') + ' 项' },
+          { label: '日记条目', value: (data.diaryCount ?? '—') + ' 篇' },
+          { label: '任务记录', value: (data.taskCount ?? '—') + ' 项' },
+        ],
+      });
+    } catch (err) {
+      console.warn('[profile] load export stats error:', err);
+    }
   },
 
   onExportRange(e) {

@@ -62,6 +62,14 @@ const coachAPI = {
     return callAPI('coach/smart-tip');
   },
 
+  /**
+   * 成就勋章列表（规则引擎计算）
+   * @returns {Promise<{code: number, data: {achievements: Array, summary: {earned: number, total: number}}}>}
+   */
+  achievements() {
+    return callAPI('achievement/list');
+  },
+
 };
 
 module.exports = coachAPI;
