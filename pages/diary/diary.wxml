@@ -135,7 +135,7 @@
       <!-- 历史列表 -->
       <view wx:else class="history-list">
         <view
-          wx:for="{{historyEntries.slice(0, 3)}}"
+          wx:for="{{recentEntries}}"
           wx:key="id"
           class="history-item"
           bind:tap="onHistoryTap"

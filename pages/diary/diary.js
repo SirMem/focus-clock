@@ -102,6 +102,7 @@ Page({
 
     // 历史列表
     historyEntries: [],
+    recentEntries: [],
     filteredEntries: [],
     dateFilters: DATE_FILTERS,
     dateFilter: 'all',
@@ -145,19 +146,26 @@ Page({
     ]);
   },
 
+  onShow() {
+    this._loadEntries();
+    this._loadTodaySummary();
+  },
+
   async _loadEntries() {
     try {
       const res = await diaryAPI.list({ pageSize: 50 });
       if (res.code === 0) {
-        const diaries = (res.data && (res.data.diaries || res.data.entries)) || [];
+        const rawDiaries = res.data && (res.data.diaries || res.data.entries);
+        const diaries = rawDiaries || [];
         const historyEntries = diaries.map(mapDiaryToView);
+        const recentEntries = historyEntries.slice(0, 3);
         const filteredEntries = _filterEntries(historyEntries, this.data.dateFilter, this.data.emotionFilter);
-        this.setData({ historyEntries, filteredEntries });
+        this.setData({ historyEntries, recentEntries, filteredEntries });
       } else {
         wx.showToast({ title: '日记加载失败', icon: 'none' });
       }
     } catch (err) {
-      console.error('加载日记列表失败', err);
+      console.error('[Diary] _loadEntries 异常:', err);
       wx.showToast({ title: '日记加载失败', icon: 'none' });
     }
   },
@@ -165,7 +173,7 @@ Page({
   async _loadTodaySummary() {
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        taskAPI.list({ filter: { isDone: true }, page: 1, pageSize: 20 }),
+        taskAPI.list({ isDone: true }, 1, 20),
         statsAPI.today(),
       ]);
 
@@ -182,7 +190,7 @@ Page({
         id: t._id,
         text: t.title,
         duration: Math.round((t.completedPomodoros || 0) * 25),
-        completed: true,
+        completed: !!t.isDone,
       }));
 
       // 更新副标题：周X · 今日已完成 X 个番茄
