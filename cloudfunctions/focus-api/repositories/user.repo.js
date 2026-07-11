@@ -200,7 +200,7 @@ class UserRepo {
     const user = await this.findByOpenId(openId);
     if (!user) return null;
 
-    const allowedFields = ['focusDuration', 'shortBreak', 'longBreak', 'dailyGoal', 'monthlyTarget', 'notificationEnabled', 'soundEnabled', 'vibrationEnabled'];
+    const allowedFields = ['focusDuration', 'shortBreak', 'longBreak', 'dailyGoal', 'monthlyTarget', 'notificationEnabled', 'soundEnabled', 'vibrationEnabled', 'themeMode', 'themeAccent', 'themeFontSize'];
     const cleanSettings = { ...UserRepo.defaultSettings(), ...(user.settings || {}) };
     for (const key of allowedFields) {
       if (settings[key] !== undefined) {

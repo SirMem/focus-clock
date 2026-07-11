@@ -567,14 +567,31 @@ Page({
     this.setData({ themeFontSize: size, themeSaved: false });
   },
 
-  onThemeSave() {
+  async onThemeSave() {
+    wx.showLoading({ title: '保存中...' });
     try {
+      // 本地存储（即时响应）
       wx.setStorageSync('theme_mode', this.data.themeMode);
       wx.setStorageSync('theme_accent', this.data.themeAccent);
       wx.setStorageSync('theme_fontsize', this.data.themeFontSize);
-      this.setData({ themeSaved: true });
-      setTimeout(() => { this.setData({ themeSaved: false }); }, 2000);
+
+      // 云端同步
+      const res = await userAPI.updateSettings({
+        themeMode: this.data.themeMode,
+        themeAccent: this.data.themeAccent,
+        themeFontSize: this.data.themeFontSize,
+      });
+
+      wx.hideLoading();
+
+      if (res.code === 0) {
+        this.setData({ themeSaved: true });
+        setTimeout(() => { this.setData({ themeSaved: false }); }, 2000);
+      } else {
+        wx.showToast({ title: res.message || '云端同步失败', icon: 'none' });
+      }
     } catch (err) {
+      wx.hideLoading();
       console.warn('[profile] save theme failed:', err);
       wx.showToast({ title: '保存失败', icon: 'none' });
     }
@@ -648,11 +665,25 @@ Page({
     this.setData({ feedbackText: val });
   },
 
-  onFeedbackSubmit() {
+  async onFeedbackSubmit() {
     const text = this.data.feedbackText.trim();
     if (!text) return;
-    this.setData({ feedbackText: '', feedbackSent: true });
-    setTimeout(() => { this.setData({ feedbackSent: false }); }, 3000);
+
+    wx.showLoading({ title: '提交中...' });
+    try {
+      const res = await userAPI.submitFeedback(text);
+      wx.hideLoading();
+      if (res.code === 0) {
+        this.setData({ feedbackText: '', feedbackSent: true });
+        setTimeout(() => { this.setData({ feedbackSent: false }); }, 3000);
+      } else {
+        wx.showToast({ title: res.message || '提交失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.warn('[profile] feedback submit failed:', err);
+      wx.showToast({ title: '提交失败', icon: 'none' });
+    }
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -669,9 +700,23 @@ Page({
     this.setData({ rating: star });
   },
 
-  onRatingSubmit() {
+  async onRatingSubmit() {
     if (this.data.rating < 1 || this.data.ratingSubmitted) return;
-    this.setData({ ratingSubmitted: true });
+
+    wx.showLoading({ title: '提交中...' });
+    try {
+      const res = await userAPI.submitRating(this.data.rating);
+      wx.hideLoading();
+      if (res.code === 0) {
+        this.setData({ ratingSubmitted: true });
+      } else {
+        wx.showToast({ title: res.message || '提交失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.warn('[profile] rating submit failed:', err);
+      wx.showToast({ title: '提交失败', icon: 'none' });
+    }
   },
 
   onLegalTap(e) {

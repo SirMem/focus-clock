@@ -23,6 +23,8 @@ const statsRoutes = require('./routes/stats.routes');
 const diaryRoutes = require('./routes/diary.routes');
 const userRoutes = require('./routes/user.routes');
 const coachRoutes = require('./routes/coach.routes');
+const feedbackRoutes = require('./routes/feedback.routes');
+const ratingRoutes = require('./routes/rating.routes');
 
 exports.main = async (event, context) => {
   const app = new TcbRouter({ event, context });
@@ -90,6 +92,8 @@ exports.main = async (event, context) => {
   diaryRoutes(app);
   userRoutes(app);
   coachRoutes(app);
+  feedbackRoutes(app);
+  ratingRoutes(app);
 
   // =========================================
   // 返回路由结果
