@@ -1,163 +1,713 @@
 <view class="page-wrapper">
 
-  <!-- ===== 自定义导航栏 ===== -->
-  <view class="nav-shell">
-    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
-    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
-      <view class="nav-left">
-        <view class="nav-placeholder"></view>
-      </view>
-      <view class="nav-title">我的</view>
-      <view class="nav-right" bind:tap="onMenuTap">
-        <t-icon name="more" size="44rpx" color="#8A8A9A" />
+  <!-- ============================================================
+       导航栏（根据 currentView 切换主视图/子视图模式）
+       ============================================================ -->
+  <block wx:if="{{currentView === 'main'}}">
+    <!-- 主视图导航栏 -->
+    <view class="nav-shell">
+      <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+      <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+        <view class="nav-left">
+          <view class="nav-placeholder"></view>
+        </view>
+        <view class="nav-title">我的</view>
+        <view class="nav-right" bind:tap="onMenuTap">
+          <t-icon name="more" size="44rpx" color="#8A8A9A" />
+        </view>
       </view>
     </view>
-  </view>
-
-  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-
-    <!-- ===== 个人信息卡片 ===== -->
-    <view class="profile-card">
-      <view class="profile-info">
-        <!-- 头像：chooseAvatar 主动授权 -->
-        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" wx:if="{{isLoggedIn}}">
-          <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
-          <view wx:else class="avatar-content">
-            <text class="avatar-emoji">🧑‍💻</text>
-          </view>
-        </button>
-        <view wx:else class="avatar-wrap" bind:tap="onAvatarTap">
-          <view class="avatar-content avatar-guest">
-            <t-icon name="user-avatar" size="48rpx" color="#fff" />
+  </block>
+  <block wx:else>
+    <!-- 子视图导航栏 -->
+    <view class="nav-shell sub-view-nav">
+      <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+      <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+        <view class="nav-left">
+          <view class="nav-back-btn" bind:tap="navigateBack">
+            <t-icon name="chevron-left" size="36rpx" color="#1A1A2E" />
           </view>
         </view>
-        <view class="user-info">
-          <input wx:if="{{isLoggedIn}}" class="nickname-input" type="nickname" value="{{nickName}}" bindblur="onNicknameBlur" placeholder="点击设置昵称" />
-          <text wx:if="{{isLoggedIn}}" class="user-desc">点击头像和昵称可完善资料</text>
+        <view class="nav-title sub-nav-title">{{subViewTitle}}</view>
+        <view class="nav-right"></view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       主视图
+       ============================================================ -->
+  <block wx:if="{{currentView === 'main'}}">
+    <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+      <!-- ===== 个人信息卡片 ===== -->
+      <view class="profile-card">
+        <view class="profile-info">
+          <!-- 头像：chooseAvatar 主动授权 -->
+          <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" wx:if="{{isLoggedIn}}">
+            <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+            <view wx:else class="avatar-content">
+              <text class="avatar-emoji">🧑‍💻</text>
+            </view>
+          </button>
+          <view wx:else class="avatar-wrap" bind:tap="onAvatarTap">
+            <view class="avatar-content avatar-guest">
+              <t-icon name="user-avatar" size="48rpx" color="#fff" />
+            </view>
+          </view>
+          <view class="user-info">
+            <input wx:if="{{isLoggedIn}}" class="nickname-input" type="nickname" value="{{nickName}}" bindblur="onNicknameBlur" placeholder="点击设置昵称" />
+            <text wx:if="{{isLoggedIn}}" class="user-desc">点击头像和昵称可完善资料</text>
+            <block wx:else>
+              <text class="user-name">点击登录</text>
+              <text class="user-desc">登录后查看完整数据</text>
+            </block>
+          </view>
+          <view class="settings-btn" bind:tap="onSettingsTap">
+            <t-icon name="settings" size="36rpx" color="rgba(255,255,255,0.8)" />
+          </view>
+        </view>
+        <button
+          wx:if="{{isLoggedIn}}"
+          class="profile-save-btn {{profileDirty ? 'profile-save-btn-active' : ''}}"
+          disabled="{{!profileDirty || profileSubmitting}}"
+          loading="{{profileSubmitting}}"
+          bindtap="onSaveProfile"
+        >
+          {{profileDirty ? '保存资料' : '资料已同步'}}
+        </button>
+      </view>
+
+      <!-- ===== 统计摘要行 ===== -->
+      <view class="stats-summary">
+        <view class="summary-item" wx:for="{{summaryStats}}" wx:key="label">
+          <text class="summary-icon">{{item.icon}}</text>
+          <text class="summary-value">{{item.value}}</text>
+          <text class="summary-label">{{item.label}}</text>
+        </view>
+      </view>
+
+      <!-- ===== 本月目标 ===== -->
+      <view class="goal-card">
+        <view class="goal-header">
+          <view class="goal-title-wrap">
+            <text class="goal-icon">🎯</text>
+            <text class="goal-title">本月目标</text>
+          </view>
+          <text class="goal-pct">{{monthlyGoalProgress}}%</text>
+        </view>
+        <text class="goal-subtitle">专注 {{monthlyGoalCurrent}}h / {{monthlyGoalTarget}}h</text>
+        <view class="goal-progress-bar">
+          <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%"></view>
+        </view>
+        <text class="goal-remain">还需 {{goalRemain}}h 达成目标</text>
+      </view>
+
+      <!-- ===== 功能菜单 ===== -->
+      <view class="menu-section">
+        <text class="menu-section-title">功能</text>
+        <view class="menu-card">
+          <view
+            wx:for="{{featureMenu}}"
+            wx:key="label"
+            class="menu-item"
+            bind:tap="onMenuItemTap"
+            data-key="{{item.key}}"
+          >
+            <text class="menu-item-icon">{{item.icon}}</text>
+            <view class="menu-item-content">
+              <text class="menu-item-label">{{item.label}}</text>
+              <text class="menu-item-desc">{{item.desc}}</text>
+            </view>
+            <view wx:if="{{item.badge}}" class="menu-item-badge" style="background: {{item.badgeColor || '#34C759'}}; color: #fff;">
+              <text>{{item.badge}}</text>
+            </view>
+            <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 设置菜单 ===== -->
+      <view class="menu-section">
+        <text class="menu-section-title">设置</text>
+        <view class="menu-card">
+          <view
+            wx:for="{{settingMenu}}"
+            wx:key="label"
+            class="menu-item"
+            bind:tap="onMenuItemTap"
+            data-key="{{item.key}}"
+          >
+            <text class="menu-item-icon">{{item.icon}}</text>
+            <view class="menu-item-content">
+              <text class="menu-item-label">{{item.label}}</text>
+              <text wx:if="{{item.desc}}" class="menu-item-desc">{{item.desc}}</text>
+            </view>
+            <view wx:if="{{item.type === 'switch'}}" class="menu-switch {{item.enabled ? 'switch-on' : ''}}" bind:tap="onSwitchTap" data-key="{{item.key}}" catch:tap>
+              <view class="switch-knob"></view>
+            </view>
+            <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 关于菜单 ===== -->
+      <view class="menu-section">
+        <text class="menu-section-title">关于</text>
+        <view class="menu-card">
+          <view
+            wx:for="{{aboutMenu}}"
+            wx:key="label"
+            class="menu-item"
+            bind:tap="onMenuItemTap"
+            data-key="{{item.key}}"
+          >
+            <text class="menu-item-icon">{{item.icon}}</text>
+            <view class="menu-item-content">
+              <text class="menu-item-label">{{item.label}}</text>
+              <text class="menu-item-desc">{{item.desc}}</text>
+            </view>
+            <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 退出登录 ===== -->
+      <view wx:if="{{isLoggedIn}}" class="logout-section">
+        <view class="logout-btn" bind:tap="onLogout">
+          <text>退出登录</text>
+        </view>
+      </view>
+
+      <text class="version-text">专注时钟 v2.1.0</text>
+
+      <view class="bottom-scroll-space"></view>
+    </scroll-view>
+  </block>
+
+  <!-- ============================================================
+       子视图：个人目标
+       ============================================================ -->
+  <block wx:if="{{currentView === 'goal'}}">
+    <view class="sub-view goal-sub-view">
+
+      <!-- 本月目标进度 -->
+      <view class="goal-progress-card">
+        <text class="goal-progress-label">本月目标进度</text>
+        <view class="goal-progress-row">
+          <text class="goal-progress-pct">{{monthlyGoalProgress}}</text>
+          <text class="goal-progress-unit">%</text>
+          <text class="goal-progress-sub">专注 {{monthlyGoalCurrent}}h / {{goalMonthlyTarget}}h</text>
+        </view>
+        <view class="goal-progress-track">
+          <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}%"></view>
+        </view>
+        <text class="goal-progress-remain" wx:if="{{goalRemain > 0}}">还差 {{goalRemain}}h 达成目标，继续加油！</text>
+        <text class="goal-progress-remain" wx:else>🎉 恭喜你达成月度目标！</text>
+      </view>
+
+      <!-- 单次专注时长 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">单次专注时长</text>
+        <text class="goal-setting-desc">每个番茄钟的默认专注时间</text>
+        <view class="goal-duration-grid">
+          <view
+            wx:for="{{[15,20,25,30,45,60]}}"
+            wx:key="*this"
+            class="goal-duration-btn {{item === goalFocusDuration ? 'duration-active' : ''}}"
+            bind:tap="onGoalFocusDuration"
+            data-value="{{item}}"
+          >
+            <text>{{item}}</text>
+          </view>
+        </view>
+        <text class="goal-setting-hint">当前：{{goalFocusDuration}} 分钟 / 个番茄</text>
+      </view>
+
+      <!-- 月度专注目标 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">月度专注目标</text>
+        <text class="goal-setting-desc">每月计划专注的总小时数</text>
+        <view class="goal-stepper-row">
+          <view class="goal-stepper-btn goal-stepper-sub" bind:tap="onGoalMonthlySub">
+            <text class="stepper-sign">−</text>
+          </view>
+          <view class="goal-stepper-value-wrap">
+            <text class="goal-stepper-value">{{goalMonthlyTarget}}</text>
+            <text class="goal-stepper-unit">小时</text>
+          </view>
+          <view class="goal-stepper-btn goal-stepper-add" bind:tap="onGoalMonthlyAdd">
+            <text class="stepper-sign">+</text>
+          </view>
+        </view>
+        <view class="goal-preset-row">
+          <view
+            wx:for="{{[20,40,60,80,100]}}"
+            wx:key="*this"
+            class="goal-preset-btn {{item === goalMonthlyTarget ? 'preset-active' : ''}}"
+            bind:tap="onGoalMonthlyPreset"
+            data-value="{{item}}"
+          >
+            <text>{{item}}h</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 每日番茄目标 -->
+      <view class="goal-setting-card">
+        <text class="goal-setting-title">每日番茄目标</text>
+        <text class="goal-setting-desc">每天计划完成的番茄数量</text>
+        <view class="goal-stepper-row">
+          <view class="goal-stepper-btn goal-stepper-sub" bind:tap="onGoalDailySub">
+            <text class="stepper-sign">−</text>
+          </view>
+          <view class="goal-daily-display">
+            <text wx:for="{{goalDailyDisplay}}" wx:key="index" class="goal-daily-emoji">{{item}}</text>
+            <text wx:if="{{goalDailyTarget > 10}}" class="goal-daily-overflow">+{{goalDailyTarget - 10}}</text>
+          </view>
+          <view class="goal-stepper-btn goal-stepper-add" bind:tap="onGoalDailyAdd">
+            <text class="stepper-sign">+</text>
+          </view>
+        </view>
+        <text class="goal-setting-hint">每天 {{goalDailyTarget}} 个番茄 = {{goalDailyTarget * goalFocusDuration}} 分钟</text>
+      </view>
+
+      <!-- 保存按钮 -->
+      <view class="goal-save-section">
+        <view
+          class="goal-save-btn {{goalSaved ? 'goal-save-done' : ''}}"
+          bind:tap="onGoalSave"
+        >
+          <text>{{goalSaved ? '✓ 目标已保存' : '保存设置'}}</text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       子视图：成就勋章
+       ============================================================ -->
+  <block wx:if="{{currentView === 'achievements'}}">
+    <view class="sub-view achievement-sub-view">
+
+      <!-- 摘要栏 -->
+      <view class="achievement-summary">
+        <text class="achievement-summary-icon">🏆</text>
+        <view class="achievement-summary-info">
+          <text class="achievement-summary-count">{{achievementEarnedCount}} / {{achievementTotalCount}} 个</text>
+          <text class="achievement-summary-pct">已解锁全部成就的 {{achievementEarnedCount > 0 ? Math.round(achievementEarnedCount / achievementTotalCount * 100) : 0}}%</text>
+          <view class="achievement-summary-track">
+            <view class="achievement-summary-fill" style="width: {{achievementEarnedCount > 0 ? (achievementEarnedCount / achievementTotalCount * 100) : 0}}%"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 筛选标签 -->
+      <view class="achievement-filter-row">
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'all' ? 'filter-active' : ''}}"
+          data-filter="all"
+          bind:tap="onAchievementFilter"
+        >
+          <text>全部</text>
+        </view>
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'earned' ? 'filter-active' : ''}}"
+          data-filter="earned"
+          bind:tap="onAchievementFilter"
+        >
+          <text>已获得 {{achievementEarnedCount}}</text>
+        </view>
+        <view
+          class="achievement-filter-tag {{achievementFilter === 'locked' ? 'filter-active' : ''}}"
+          data-filter="locked"
+          bind:tap="onAchievementFilter"
+        >
+          <text>未解锁 {{achievementTotalCount - achievementEarnedCount}}</text>
+        </view>
+      </view>
+
+      <!-- 勋章网格 -->
+      <view class="achievement-grid">
+        <view
+          wx:for="{{filteredAchievements}}"
+          wx:key="id"
+          class="achievement-card {{item.earned ? 'card-earned' : 'card-locked'}}"
+        >
+          <!-- 未解锁时显示锁 -->
+          <view wx:if="{{!item.earned}}" class="achievement-lock-overlay">
+            <text class="achievement-lock-icon">🔒</text>
+          </view>
+
+          <view class="achievement-card-icon-wrap {{item.earned ? 'icon-earned' : 'icon-locked'}}">
+            <text class="achievement-card-icon">{{item.icon}}</text>
+          </view>
+          <text class="achievement-card-name">{{item.name}}</text>
+          <text class="achievement-card-desc">{{item.desc}}</text>
+
+          <block wx:if="{{item.earned}}">
+            <text class="achievement-card-date">{{item.date}}</text>
+          </block>
           <block wx:else>
-            <text class="user-name">点击登录</text>
-            <text class="user-desc">登录后查看完整数据</text>
+            <view class="achievement-card-progress-track">
+              <view class="achievement-card-progress-fill" style="width: {{item.progress || 0}}%"></view>
+            </view>
+            <text class="achievement-card-progress-pct">{{item.progress || 0}}%</text>
           </block>
         </view>
-        <view class="settings-btn" bind:tap="onSettingsTap">
-          <t-icon name="settings" size="36rpx" color="rgba(255,255,255,0.8)" />
+      </view>
+
+      <view class="bottom-scroll-space"></view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       子视图：主题设置
+       ============================================================ -->
+  <block wx:if="{{currentView === 'theme'}}">
+    <view class="sub-view theme-sub-view">
+
+      <!-- 显示模式 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">显示模式</text>
+        <view class="theme-mode-row">
+          <!-- 浅色 -->
+          <view class="theme-mode-card {{themeMode === 'light' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="light">
+            <view class="theme-mode-preview" style="background: #F5F7FA;">
+              <view class="theme-preview-inner" style="background: #fff;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #1A1A2E; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'light' ? 'mode-label-active' : ''}}">☀️ 浅色</text>
+          </view>
+          <!-- 深色 -->
+          <view class="theme-mode-card {{themeMode === 'dark' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="dark">
+            <view class="theme-mode-preview" style="background: #1A1A2E;">
+              <view class="theme-preview-inner" style="background: #2A2A3E;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #fff; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'dark' ? 'mode-label-active' : ''}}">🌙 深色</text>
+          </view>
+          <!-- 跟随系统 -->
+          <view class="theme-mode-card {{themeMode === 'auto' ? 'theme-mode-active' : ''}}" bind:tap="onThemeMode" data-mode="auto">
+            <view class="theme-mode-preview" style="background: linear-gradient(135deg, #F5F7FA 50%, #1A1A2E 50%);">
+              <view class="theme-preview-inner" style="background: #fff;">
+                <view class="theme-preview-dot" style="background: {{themeAccent}};"></view>
+                <view class="theme-preview-line" style="background: #1A1A2E; opacity: 0.3;"></view>
+                <view class="theme-preview-line short" style="background: #8A8A9A; opacity: 0.3;"></view>
+              </view>
+            </view>
+            <text class="theme-mode-label {{themeMode === 'auto' ? 'mode-label-active' : ''}}">✨ 跟随系统</text>
+          </view>
         </view>
       </view>
-      <button
-        wx:if="{{isLoggedIn}}"
-        class="profile-save-btn {{profileDirty ? 'profile-save-btn-active' : ''}}"
-        disabled="{{!profileDirty || profileSubmitting}}"
-        loading="{{profileSubmitting}}"
-        bindtap="onSaveProfile"
-      >
-        {{profileDirty ? '保存资料' : '资料已同步'}}
-      </button>
-    </view>
 
-    <!-- ===== 统计摘要行 ===== -->
-    <view class="stats-summary">
-      <view class="summary-item" wx:for="{{summaryStats}}" wx:key="label">
-        <text class="summary-icon">{{item.icon}}</text>
-        <text class="summary-value">{{item.value}}</text>
-        <text class="summary-label">{{item.label}}</text>
-      </view>
-    </view>
-
-    <!-- ===== 本月目标 ===== -->
-    <view class="goal-card">
-      <view class="goal-header">
-        <view class="goal-title-wrap">
-          <text class="goal-icon">🎯</text>
-          <text class="goal-title">本月目标</text>
+      <!-- 主题色 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">主题色</text>
+        <view class="theme-color-row">
+          <view
+            wx:for="{{['#4A90D9','#34C759','#FF9500','#FF3B30','#AF52DE','#FF2D55','#5AC8FA','#FFCC00']}}"
+            wx:key="*this"
+            class="theme-color-dot {{item === themeAccent ? 'color-active' : ''}}"
+            style="background: {{item}};"
+            bind:tap="onThemeAccent"
+            data-color="{{item}}"
+          >
+            <text wx:if="{{item === themeAccent}}" class="color-check">✓</text>
+          </view>
         </view>
-        <text class="goal-pct">{{monthlyGoalProgress}}%</text>
+        <view class="theme-color-preview">
+          <view class="theme-color-swatch" style="background: {{themeAccent}};">
+            <text class="theme-color-swatch-text">Aa</text>
+          </view>
+          <view class="theme-color-info">
+            <text class="theme-color-label">当前主题色</text>
+            <text class="theme-color-value">{{themeAccent}}</text>
+          </view>
+        </view>
       </view>
-      <text class="goal-subtitle">专注 {{monthlyGoalCurrent}}h / {{monthlyGoalTarget}}h</text>
-      <view class="goal-progress-bar">
-        <view class="goal-progress-fill" style="width: {{monthlyGoalProgress}}"></view>
-      </view>
-      <text class="goal-remain">还需 {{goalRemain}}h 达成目标</text>
-    </view>
 
-    <!-- ===== 功能菜单 ===== -->
-    <view class="menu-section">
-      <text class="menu-section-title">功能</text>
-      <view class="menu-card">
+      <!-- 文字大小 -->
+      <view class="theme-section-card">
+        <text class="theme-section-title">文字大小</text>
+        <view class="theme-font-row">
+          <view
+            wx:for="{{[{l:'小',s:12},{l:'中',s:14},{l:'大',s:16},{l:'超大',s:18}]}}"
+            wx:key="s"
+            class="theme-font-btn {{item.s === themeFontSize ? 'font-active' : ''}}"
+            style="font-size: {{item.s}}px;"
+            bind:tap="onThemeFontSize"
+            data-size="{{item.s}}"
+          >
+            <text>{{item.l}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 保存 -->
+      <view class="theme-save-section">
         <view
-          wx:for="{{featureMenu}}"
-          wx:key="label"
-          class="menu-item"
-          bind:tap="onMenuItemTap"
-          data-key="{{item.key}}"
+          class="theme-save-btn {{themeSaved ? 'theme-save-done' : ''}}"
+          style="background: linear-gradient(135deg, #4A90D9, #667EEA);"
+          bind:tap="onThemeSave"
         >
-          <text class="menu-item-icon">{{item.icon}}</text>
-          <view class="menu-item-content">
-            <text class="menu-item-label">{{item.label}}</text>
-            <text class="menu-item-desc">{{item.desc}}</text>
-          </view>
-          <view wx:if="{{item.badge}}" class="menu-item-badge" style="background: {{item.badgeColor || '#34C759'}}; color: #fff;">
-            <text>{{item.badge}}</text>
-          </view>
-          <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
+          <text>{{themeSaved ? '✓ 主题已保存' : '应用主题'}}</text>
         </view>
       </view>
-    </view>
 
-    <!-- ===== 设置菜单 ===== -->
-    <view class="menu-section">
-      <text class="menu-section-title">设置</text>
-      <view class="menu-card">
-        <view
-          wx:for="{{settingMenu}}"
-          wx:key="label"
-          class="menu-item"
-          bind:tap="onMenuItemTap"
-          data-key="{{item.key}}"
-        >
-          <text class="menu-item-icon">{{item.icon}}</text>
-          <view class="menu-item-content">
-            <text class="menu-item-label">{{item.label}}</text>
-            <text wx:if="{{item.desc}}" class="menu-item-desc">{{item.desc}}</text>
+      <view class="bottom-scroll-space"></view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       子视图：数据导出
+       ============================================================ -->
+  <block wx:if="{{currentView === 'export'}}">
+    <view class="sub-view export-sub-view">
+
+      <!-- 数据概览 -->
+      <view class="export-section-card">
+        <text class="export-section-title">数据概览</text>
+        <view class="export-stats-grid">
+          <view class="export-stat-item" wx:for="{{exportStats}}" wx:key="label">
+            <text class="export-stat-value">{{item.value}}</text>
+            <text class="export-stat-label">{{item.label}}</text>
           </view>
-          <view wx:if="{{item.type === 'switch'}}" class="menu-switch {{item.enabled ? 'switch-on' : ''}}" bind:tap="onSwitchTap" data-key="{{item.key}}" catch:tap>
-            <view class="switch-knob"></view>
-          </view>
-          <t-icon wx:else name="chevron-right" size="28rpx" color="#C0C4CC" />
         </view>
       </view>
-    </view>
 
-    <!-- ===== 关于菜单 ===== -->
-    <view class="menu-section">
-      <text class="menu-section-title">关于</text>
-      <view class="menu-card">
-        <view
-          wx:for="{{aboutMenu}}"
-          wx:key="label"
-          class="menu-item"
-          bind:tap="onMenuItemTap"
-          data-key="{{item.key}}"
-        >
-          <text class="menu-item-icon">{{item.icon}}</text>
-          <view class="menu-item-content">
-            <text class="menu-item-label">{{item.label}}</text>
-            <text class="menu-item-desc">{{item.desc}}</text>
+      <!-- 导出范围 -->
+      <view class="export-section-card">
+        <text class="export-section-title">导出范围</text>
+        <view class="export-range-row">
+          <view
+            wx:for="{{[{k:'week',l:'最近 7 天'},{k:'month',l:'最近 30 天'},{k:'all',l:'全部数据'}]}}"
+            wx:key="k"
+            class="export-range-btn {{item.k === exportRange ? 'export-range-active' : ''}}"
+            bind:tap="onExportRange"
+            data-range="{{item.k}}"
+          >
+            <text>{{item.l}}</text>
           </view>
+        </view>
+      </view>
+
+      <!-- 导出格式 -->
+      <view class="export-section-card">
+        <text class="export-section-title">导出格式</text>
+        <view class="export-format-list">
+          <view
+            wx:for="{{[{k:'csv',n:'CSV 表格',d:'Excel / Numbers 可直接打开',i:'📊'},{k:'json',n:'JSON 数据',d:'适合开发者和数据分析',i:'🔧'},{k:'pdf',n:'PDF 报告',d:'可打印的可视化报告',i:'📄'}]}}"
+            wx:key="k"
+            class="export-format-item {{item.k === exportFormat ? 'format-active' : ''}}"
+            bind:tap="onExportFormat"
+            data-format="{{item.k}}"
+          >
+            <text class="export-format-icon">{{item.i}}</text>
+            <view class="export-format-info">
+              <text class="export-format-name">{{item.n}}</text>
+              <text class="export-format-desc">{{item.d}}</text>
+            </view>
+            <view class="export-radio {{item.k === exportFormat ? 'radio-checked' : ''}}">
+              <view wx:if="{{item.k === exportFormat}}" class="radio-inner"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 导出按钮 -->
+      <view class="export-action-section">
+        <view
+          class="export-btn {{exportDone ? 'export-btn-done' : ''}}"
+          disabled="{{exporting || exportDone}}"
+          bind:tap="onExport"
+        >
+          <text wx:if="{{exportDone}}">✓ 导出成功，已保存到相册</text>
+          <text wx:elif="{{exporting}}">导出中...</text>
+          <text wx:else>
+            导出 {{exportFormat === 'csv' ? 'CSV' : exportFormat === 'json' ? 'JSON' : 'PDF'}} 文件
+          </text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       子视图：帮助与反馈
+       ============================================================ -->
+  <block wx:if="{{currentView === 'help'}}">
+    <view class="sub-view help-sub-view">
+
+      <!-- 快捷入口 -->
+      <view class="help-quick-grid">
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="使用指南">
+          <text class="help-quick-icon">📖</text>
+          <text class="help-quick-label">使用指南</text>
+        </view>
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="视频教程">
+          <text class="help-quick-icon">🎬</text>
+          <text class="help-quick-label">视频教程</text>
+        </view>
+        <view class="help-quick-item" bind:tap="onQuickLinkTap" data-label="在线客服">
+          <text class="help-quick-icon">💬</text>
+          <text class="help-quick-label">在线客服</text>
+        </view>
+      </view>
+
+      <!-- 常见问题 -->
+      <view class="help-faq-card">
+        <text class="help-faq-section-title">常见问题</text>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{0}}">
+            <text class="help-faq-q">番茄工作法是什么？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 0 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 0}}" class="help-faq-answer">
+            <text>番茄工作法是一种时间管理方法，以 25 分钟专注工作 + 5 分钟短休息为一个循环，每完成 4 个番茄后进行 15-30 分钟的长休息。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{1}}">
+            <text class="help-faq-q">如何修改专注时长？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 1 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 1}}" class="help-faq-answer">
+            <text>进入「我的」→「个人目标」，在计时器设置中可以自定义专注时长（15/20/25/30/45/60 分钟）。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{2}}">
+            <text class="help-faq-q">AI 教练如何生成建议？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 2 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 2}}" class="help-faq-answer">
+            <text>AI 教练会分析你的专注历史、任务完成率、高效时段等数据，结合番茄工作法原则，每日生成个性化建议。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{3}}">
+            <text class="help-faq-q">数据会保存到云端吗？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 3 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 3}}" class="help-faq-answer">
+            <text>登录后所有数据自动同步到云端，更换设备后重新登录即可恢复所有记录。</text>
+          </view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-question" bind:tap="onFaqToggle" data-index="{{4}}">
+            <text class="help-faq-q">如何开启白噪音？</text>
+            <text class="help-faq-arrow {{faqOpenIndex === 4 ? 'arrow-open' : ''}}">›</text>
+          </view>
+          <view wx:if="{{faqOpenIndex === 4}}" class="help-faq-answer">
+            <text>在专注页面，点击右下角的音效按钮，选择喜欢的白噪音类型，音量可单独调节。</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 意见反馈 -->
+      <view class="help-feedback-card">
+        <text class="help-faq-section-title">意见反馈</text>
+        <view class="help-feedback-input-wrap">
+          <textarea
+            class="help-feedback-textarea"
+            placeholder="描述你遇到的问题或建议..."
+            placeholder-style="color:#C0C4CC;font-size:26rpx"
+            value="{{feedbackText}}"
+            bindinput="onFeedbackInput"
+            maxlength="{{feedbackMax}}"
+            auto-height
+          />
+          <view class="help-feedback-footer">
+            <text class="help-feedback-count">{{feedbackText.length}}/{{feedbackMax}}</text>
+          </view>
+        </view>
+        <view
+          class="help-feedback-btn {{feedbackSent ? 'feedback-btn-done' : (feedbackText.trim().length > 0 ? 'feedback-btn-ready' : '')}}"
+          bind:tap="onFeedbackSubmit"
+        >
+          <text wx:if="{{feedbackSent}}">✓ 反馈已提交，感谢！</text>
+          <text wx:else>提交反馈</text>
+        </view>
+      </view>
+
+      <view class="bottom-scroll-space"></view>
+    </view>
+  </block>
+
+  <!-- ============================================================
+       子视图：关于 & 评分
+       ============================================================ -->
+  <block wx:if="{{currentView === 'about'}}">
+    <view class="sub-view about-sub-view">
+
+      <view class="about-identity-section">
+        <view class="about-app-icon">
+          <text class="about-app-icon-text">🍅</text>
+        </view>
+        <text class="about-app-name">专注时钟</text>
+        <text class="about-app-version">版本 2.1.0 (Build 2410)</text>
+      </view>
+
+      <view class="about-rating-card" wx:if="{{!ratingSubmitted}}">
+        <text class="about-rating-title">喜欢专注时钟吗？</text>
+        <text class="about-rating-subtitle">你的评分对我们很重要</text>
+        <view class="about-star-row">
+          <view
+            wx:for="{{[1,2,3,4,5]}}"
+            wx:key="*this"
+            class="about-star {{item <= rating ? 'star-on' : ''}}"
+            bind:tap="onRatingStar"
+            data-star="{{item}}"
+          >
+            <text>⭐</text>
+          </view>
+        </view>
+        <view wx:if="{{rating > 0}}" class="about-rating-submit" bind:tap="onRatingSubmit">
+          <text>提交评分</text>
+        </view>
+      </view>
+      <view wx:else class="about-rating-card about-rating-done">
+        <text class="about-rating-done-icon">🎉</text>
+        <text class="about-rating-done-title">感谢你的评分！</text>
+        <text class="about-rating-done-desc">你的支持是我们前进的动力</text>
+      </view>
+
+      <view class="about-info-card">
+        <view class="about-info-item" wx:for="{{appInfo}}" wx:key="label">
+          <text class="about-info-label">{{item.label}}</text>
+          <text class="about-info-value">{{item.value}}</text>
+        </view>
+      </view>
+
+      <view class="about-legal-card">
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="用户协议">
+          <text class="about-legal-text">用户协议</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="隐私政策">
+          <text class="about-legal-text">隐私政策</text>
+          <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
+        </view>
+        <view class="about-legal-item" bind:tap="onLegalTap" data-title="开源许可">
+          <text class="about-legal-text">开源许可</text>
           <t-icon name="chevron-right" size="28rpx" color="#C0C4CC" />
         </view>
       </view>
+
+      <text class="about-footer-text">© 2026 专注团队 · 用心做好每一个番茄 🍅</text>
+
+      <view class="bottom-scroll-space"></view>
     </view>
-
-    <!-- ===== 退出登录 ===== -->
-    <view wx:if="{{isLoggedIn}}" class="logout-section">
-      <view class="logout-btn" bind:tap="onLogout">
-        <text>退出登录</text>
-      </view>
-    </view>
-
-    <text class="version-text">专注时钟 v2.1.0</text>
-
-    <view class="bottom-scroll-space"></view>
-  </scroll-view>
+  </block>
 
 </view>

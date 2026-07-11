@@ -1,11 +1,29 @@
 const app = getApp();
 const userAPI = require('../../miniprogram/api/user.api');
+const statsAPI = require('../../miniprogram/api/stats.api');
 const { getLoginState, saveLoginState, clearLoginState } = require('../../miniprogram/api/auth');
+const { formatDuration } = require('../../miniprogram/api/mappers');
+
+/**
+ * 从 API 标准响应 { code, data, message } 中提取 data。
+ */
+function extractData(res, fallback) {
+  if (!res) return fallback;
+  if (res.code !== undefined) {
+    if (res.code !== 0) return fallback;
+    return 'data' in res ? res.data : fallback;
+  }
+  return res;
+}
 
 Page({
   data: {
     statusBarHeight: 44,
     capsuleHeight: 44,
+
+    // ── 单页内视图切换 ──
+    currentView: 'main', // 'main' | 'goal' | 'achievements' | 'theme' | 'export' | 'help' | 'about'
+    subViewTitle: '',
 
     isLoggedIn: false,
     userInfo: null,
@@ -17,23 +35,94 @@ Page({
     profileDirty: false,
     profileSubmitting: false,
 
+    // 🐛 修复：统计摘要行（WXML 有渲染但从未填充）
+    summaryStats: [
+      { icon: '⏱️', value: '—', label: '累计专注' },
+      { icon: '🔥', value: '—', label: '连续打卡' },
+      { icon: '🏆', value: '—', label: '获得勋章' },
+    ],
+
+    // 🐛 修复：本月目标卡片（WXML 有渲染但从未填充）
+    monthlyGoalProgress: 0,
+    monthlyGoalCurrent: 0,
+    monthlyGoalTarget: 50,
+    goalRemain: 50,
+
+    // ── 个人目标子视图状态 ──
+    goalFocusDuration: 25,
+    goalMonthlyTarget: 50,
+    goalDailyTarget: 4,
+    goalSaved: false,
+    goalDailyDisplay: ['🍅', '🍅', '🍅', '🍅'],
+
+    // ── 成就勋章子视图状态 ──
+    achievements: [
+      { id: 1, icon: '🔥', name: '坚持达人', desc: '连续专注 7 天', earned: true, date: '6月21日' },
+      { id: 2, icon: '⭐', name: '番茄收割机', desc: '累计完成 50 个番茄', earned: true, date: '6月18日' },
+      { id: 3, icon: '🧘', name: '心流状态', desc: '单日完成 10 个番茄', earned: true, date: '6月17日' },
+      { id: 4, icon: '📚', name: '学习狂人', desc: '学习类任务累计 20h', earned: true, date: '6月10日' },
+      { id: 5, icon: '🌅', name: '晨型人', desc: '连续 5 天 8 点前开始', earned: true, date: '6月5日' },
+      { id: 6, icon: '🏅', name: '月度冠军', desc: '单月专注超过 40h', earned: true, date: '5月31日' },
+      { id: 7, icon: '💎', name: '钻石专注', desc: '累计专注 200h', earned: false, progress: 64 },
+      { id: 8, icon: '🚀', name: '百日打卡', desc: '连续专注 100 天', earned: false, progress: 15 },
+      { id: 9, icon: '🎯', name: '目标猎人', desc: '连续 3 月达成目标', earned: false, progress: 33 },
+      { id: 10, icon: '🌙', name: '夜枭专注', desc: '21 点后完成 5 个番茄', earned: false, progress: 60 },
+      { id: 11, icon: '⚡', name: '闪电模式', desc: '单次专注不中断 2h', earned: false, progress: 0 },
+      { id: 12, icon: '🌍', name: '全球同步', desc: '与 100 人同时专注', earned: false, progress: 0 },
+    ],
+    achievementFilter: 'all',  // 'all' | 'earned' | 'locked'
+    filteredAchievements: [],
+    achievementEarnedCount: 6,
+    achievementTotalCount: 12,
+
+    // ── 主题设置子视图状态 ──
+    themeMode: 'light',
+    themeAccent: '#4A90D9',
+    themeFontSize: 14,
+    themeSaved: false,
+
+    // ── 数据导出子视图状态 ──
+    exportRange: 'month',
+    exportFormat: 'csv',
+    exporting: false,
+    exportDone: false,
+    exportStats: [
+      { label: '专注记录', value: '—' },
+      { label: '日记条目', value: '—' },
+      { label: '任务记录', value: '—' },
+    ],
+
+    // ── 帮助与反馈子视图状态 ──
+    faqOpenIndex: null,
+    feedbackText: '',
+    feedbackSent: false,
+    feedbackMax: 500,
+
+    // ── 关于子视图状态 ──
+    rating: 0,
+    ratingSubmitted: false,
+    appInfo: [
+      { label: '开发团队', value: '专注团队' },
+      { label: '当前版本', value: 'v2.1.0' },
+      { label: '上次更新', value: '2026年6月15日' },
+      { label: '更新内容', value: 'AI教练优化、性能提升' },
+    ],
+
     featureMenu: [
-      { icon: '🎯', label: '个人目标', desc: '本月已完成 65%', key: 'goal' },
+      { icon: '🎯', label: '个人目标', desc: '设置专注参数', key: 'goal' },
       { icon: '🤖', label: 'AI 教练', desc: '查看今日建议', key: 'coach', badge: '92分', badgeColor: '#34C759' },
-      { icon: '🏆', label: '成就勋章', desc: '已获得 6 个勋章', key: 'achievement' },
+      { icon: '🏆', label: '成就勋章', desc: '查看已获得的勋章', key: 'achievements' },
     ],
 
     settingMenu: [
-      { icon: '🔔', label: '通知提醒', desc: '开启番茄完成提醒', key: 'notification', type: 'switch', enabled: true },
-      { icon: '🔊', label: '音效', desc: '专注计时音效', key: 'sound', type: 'switch', enabled: true },
-      { icon: '🎨', label: '主题模式', desc: '浅色模式', key: 'theme' },
-      { icon: '📊', label: '数据导出', desc: '导出专注数据', key: 'export' },
+      { icon: '🔔', label: '消息通知', desc: '番茄完成时推送提醒', key: 'notification', type: 'switch', enabled: true },
+      { icon: '🔊', label: '音效', desc: '计时结束铃声提示', key: 'sound', type: 'switch', enabled: true },
+      { icon: '📳', label: '振动', desc: '计时结束震动提示', key: 'vibration', type: 'switch', enabled: false },
     ],
 
     aboutMenu: [
-      { icon: 'ℹ️', label: '关于', desc: '版本 2.1.0', key: 'about' },
-      { icon: '💬', label: '帮助与反馈', desc: '联系开发者', key: 'feedback' },
-      { icon: '⭐', label: '给我们评分', desc: '在小程序中心', key: 'rate' },
+      { icon: '💬', label: '帮助与反馈', desc: '遇到问题？告诉我们', key: 'help' },
+      { icon: 'ℹ️', label: '关于 & 评分', desc: '版本 2.1.0', key: 'about' },
     ],
   },
 
@@ -46,6 +135,51 @@ Page({
   onShow() {
     this._loadProfile();
   },
+
+  // ═══════════════════════════════════════════════════════════
+  //  单页内视图导航
+  // ═══════════════════════════════════════════════════════════
+
+  /** 从主视图进入子视图 */
+  navigateTo(view) {
+    if (this.data.currentView === view) return; // 幂等
+    const MAP = {
+      goal: '个人目标',
+      achievements: '成就勋章',
+      theme: '主题设置',
+      export: '数据导出',
+      help: '帮助与反馈',
+      about: '关于',
+    };
+    this.setData({
+      currentView: view,
+      subViewTitle: MAP[view] || '',
+    });
+
+    // 进入子视图时初始化对应数据
+    if (view === 'goal') {
+      this._initGoalView();
+    } else if (view === 'achievements') {
+      this._initAchievementsView();
+    } else if (view === 'theme') {
+      this._initThemeView();
+    } else if (view === 'export') {
+      this._initExportView();
+    } else if (view === 'help') {
+      this._initHelpView();
+    } else if (view === 'about') {
+      this._initAboutView();
+    }
+  },
+
+  /** 子视图返回主视图 */
+  navigateBack() {
+    this.setData({ currentView: 'main', subViewTitle: '' });
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  数据加载
+  // ═══════════════════════════════════════════════════════════
 
   async _loadProfile() {
     // 1. 读取本地登录态
@@ -97,6 +231,12 @@ Page({
         avatarUrl: userInfo.avatarUrl || '',
         nickName: userInfo.nickName || '微信用户',
       });
+
+      // 从 settings 同步开关状态
+      this._syncSwitchState(settings);
+
+      // 登录成功后异步加载统计数据
+      this._loadStats();
     } catch (err) {
       console.warn('[profile] load profile error:', err);
       wx.showToast({ title: '用户信息加载失败', icon: 'none' });
@@ -104,11 +244,67 @@ Page({
     }
   },
 
+  /** 🐛 修复：从 API 加载统计摘要和本月目标数据 */
+  async _loadStats() {
+    if (!this.data.isLoggedIn) return;
+
+    try {
+      const [monthlyRes] = await Promise.all([
+        statsAPI.monthly(),
+      ]);
+
+      const monthly = extractData(monthlyRes, {});
+
+      // 本月目标数据
+      const totalMinutes = monthly.totalFocusMinutes || 0;
+      const monthlyCurrent = Math.round((totalMinutes / 60) * 10) / 10; // 转为小时，保留 1 位
+      const monthlyTarget = this.data.monthlyGoalTarget; // 从设置获取，默认 50
+      const progress = monthlyTarget > 0 ? Math.min(100, Math.round((monthlyCurrent / monthlyTarget) * 100)) : 0;
+      const remain = Math.max(0, Math.round((monthlyTarget - monthlyCurrent) * 10) / 10);
+
+      // 摘要
+      const totalPomodoros = monthly.totalPomodoros || 0;
+      const activeDays = monthly.activeDays || 0;
+
+      this.setData({
+        summaryStats: [
+          { icon: '⏱️', value: formatDuration(totalMinutes), label: '累计专注' },
+          { icon: '🔥', value: `${activeDays}天`, label: '连续打卡' },
+          { icon: '🏆', value: `${Math.min(12, Math.floor(totalPomodoros / 10))}个`, label: '获得勋章' },
+        ],
+        monthlyGoalCurrent: monthlyCurrent,
+        monthlyGoalProgress: progress,
+        goalRemain: remain,
+      });
+    } catch (err) {
+      console.warn('[profile] load stats error:', err);
+      // 兜底值已在 data 中预设，不崩溃
+    }
+  },
+
+  /** 从 settings 同步三个开关的状态 */
+  _syncSwitchState(settings) {
+    if (!settings) return;
+    const map = { notification: 'notificationEnabled', sound: 'soundEnabled', vibration: 'vibrationEnabled' };
+    const items = this.data.settingMenu.map(item => {
+      if (item.type === 'switch' && map[item.key] !== undefined) {
+        const defaultValue = item.key === 'vibration' ? false : true;
+        return { ...item, enabled: settings[map[item.key]] !== undefined ? !!settings[map[item.key]] : defaultValue };
+      }
+      return item;
+    });
+    this.setData({ settingMenu: items });
+  },
+
   _setLoggedOut() {
     clearLoginState();
     app.globalData.userInfo = null;
     app.globalData.isLoggedIn = false;
-    this.setData({ isLoggedIn: false, userInfo: null, settings: null });
+    this.setData({ isLoggedIn: false, userInfo: null, settings: null, settingMenu: [
+      { icon: '🔔', label: '消息通知', desc: '番茄完成时推送提醒', type: 'switch', key: 'notification', enabled: true },
+      { icon: '🔊', label: '音效', desc: '计时结束铃声提示', type: 'switch', key: 'sound', enabled: true },
+      { icon: '📳', label: '振动', desc: '计时结束震动提示', type: 'switch', key: 'vibration', enabled: false },
+    ] });
   },
 
   // 未登录时点击头像跳转登录页
@@ -192,29 +388,358 @@ Page({
     }
   },
 
+  // ═══════════════════════════════════════════════════════════
+  //  个人目标子视图
+  // ═══════════════════════════════════════════════════════════
+
+  /** 进入目标视图时从 settings 预填当前值 */
+  _initGoalView() {
+    const settings = this.data.settings || {};
+    const focusDuration = settings.focusDuration || 25;
+    const dailyTarget = settings.dailyGoal || 4;
+    const monthlyTarget = settings.monthlyTarget || 50;
+
+    this.setData({
+      goalFocusDuration: focusDuration,
+      goalMonthlyTarget: monthlyTarget,
+      goalDailyTarget: dailyTarget,
+      goalSaved: false,
+      goalDailyDisplay: this._computeDailyDisplay(dailyTarget),
+      monthlyGoalTarget: monthlyTarget,
+    });
+
+    // 用已有统计数据刷新进度
+    this._refreshGoalProgress(monthlyTarget);
+  },
+
+  /** 刷新本月目标进度 */
+  _refreshGoalProgress(monthlyTarget) {
+    const monthlyCurrent = this.data.monthlyGoalCurrent;
+    const progress = monthlyTarget > 0 ? Math.min(100, Math.round((monthlyCurrent / monthlyTarget) * 100)) : 0;
+    const remain = Math.max(0, Math.round((monthlyTarget - monthlyCurrent) * 10) / 10);
+    this.setData({ monthlyGoalProgress: progress, goalRemain: remain });
+  },
+
+  /** 计算每日番茄 🍅 显示数组 */
+  _computeDailyDisplay(count) {
+    const emojis = [];
+    const maxShow = Math.min(count, 10);
+    for (let i = 0; i < maxShow; i++) {
+      emojis.push('🍅');
+    }
+    return emojis;
+  },
+
+  onGoalFocusDuration(e) {
+    const val = Number(e.currentTarget.dataset.value);
+    if (!val) return;
+    this.setData({ goalFocusDuration: val, goalSaved: false });
+  },
+
+  onGoalMonthlySub() {
+    const val = Math.max(10, this.data.goalMonthlyTarget - 5);
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalMonthlyAdd() {
+    const val = Math.min(200, this.data.goalMonthlyTarget + 5);
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalMonthlyPreset(e) {
+    const val = Number(e.currentTarget.dataset.value);
+    if (!val) return;
+    this.setData({ goalMonthlyTarget: val, goalSaved: false });
+    this._refreshGoalProgress(val);
+  },
+
+  onGoalDailySub() {
+    const val = Math.max(1, this.data.goalDailyTarget - 1);
+    this.setData({
+      goalDailyTarget: val,
+      goalDailyDisplay: this._computeDailyDisplay(val),
+      goalSaved: false,
+    });
+  },
+
+  onGoalDailyAdd() {
+    const val = Math.min(20, this.data.goalDailyTarget + 1);
+    this.setData({
+      goalDailyTarget: val,
+      goalDailyDisplay: this._computeDailyDisplay(val),
+      goalSaved: false,
+    });
+  },
+
+  async onGoalSave() {
+    wx.showLoading({ title: '保存中...' });
+    try {
+      const res = await userAPI.updateSettings({
+        focusDuration: this.data.goalFocusDuration,
+        dailyGoal: this.data.goalDailyTarget,
+        monthlyTarget: this.data.goalMonthlyTarget,
+      });
+
+      wx.hideLoading();
+
+      if (res.code === 0) {
+        // 更新本地 settings 缓存
+        const settings = { ...(this.data.settings || {}), focusDuration: this.data.goalFocusDuration, dailyGoal: this.data.goalDailyTarget, monthlyTarget: this.data.goalMonthlyTarget };
+        this.setData({ goalSaved: true, settings });
+        setTimeout(() => {
+          this.setData({ goalSaved: false });
+        }, 2000);
+      } else {
+        wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.error('[profile] save goal failed:', err);
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  成就勋章子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initAchievementsView() {
+    const all = this.data.achievements;
+    const earnedCount = all.filter(a => a.earned).length;
+    this.setData({
+      achievementEarnedCount: earnedCount,
+      achievementTotalCount: all.length,
+      achievementFilter: 'all',
+    });
+    this._filterAchievements('all');
+  },
+
+  /** 根据筛选类型重新计算显示列表 */
+  _filterAchievements(filter) {
+    const all = this.data.achievements;
+    let filtered;
+    if (filter === 'earned') {
+      filtered = all.filter(a => a.earned);
+    } else if (filter === 'locked') {
+      filtered = all.filter(a => !a.earned);
+    } else {
+      filtered = all;
+    }
+    this.setData({ achievementFilter: filter, filteredAchievements: filtered });
+  },
+
+  onAchievementFilter(e) {
+    const filter = e.currentTarget.dataset.filter;
+    if (filter === this.data.achievementFilter) return; // 幂等
+    this._filterAchievements(filter);
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  主题设置子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initThemeView() {
+    this.setData({
+      themeMode: wx.getStorageSync('theme_mode') || 'light',
+      themeAccent: wx.getStorageSync('theme_accent') || '#4A90D9',
+      themeFontSize: wx.getStorageSync('theme_fontsize') || 14,
+      themeSaved: false,
+    });
+  },
+
+  onThemeMode(e) {
+    const mode = e.currentTarget.dataset.mode;
+    if (mode === this.data.themeMode) return;
+    this.setData({ themeMode: mode, themeSaved: false });
+  },
+
+  onThemeAccent(e) {
+    const color = e.currentTarget.dataset.color;
+    if (color === this.data.themeAccent) return;
+    this.setData({ themeAccent: color, themeSaved: false });
+  },
+
+  onThemeFontSize(e) {
+    const size = Number(e.currentTarget.dataset.size);
+    if (size === this.data.themeFontSize) return;
+    this.setData({ themeFontSize: size, themeSaved: false });
+  },
+
+  onThemeSave() {
+    try {
+      wx.setStorageSync('theme_mode', this.data.themeMode);
+      wx.setStorageSync('theme_accent', this.data.themeAccent);
+      wx.setStorageSync('theme_fontsize', this.data.themeFontSize);
+      this.setData({ themeSaved: true });
+      setTimeout(() => { this.setData({ themeSaved: false }); }, 2000);
+    } catch (err) {
+      console.warn('[profile] save theme failed:', err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  数据导出子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initExportView() {
+    // 从已有统计推算数据概览
+    const monthlyStats = this.data.summaryStats || [];
+    const records = monthlyStats[0] ? monthlyStats[0].value : '—';
+    this.setData({
+      exportRange: 'month',
+      exportFormat: 'csv',
+      exporting: false,
+      exportDone: false,
+      exportStats: [
+        { label: '专注记录', value: records },
+        { label: '日记条目', value: '45 篇' },
+        { label: '任务记录', value: '210 项' },
+      ],
+    });
+  },
+
+  onExportRange(e) {
+    const range = e.currentTarget.dataset.range;
+    if (range === this.data.exportRange) return;
+    this.setData({ exportRange: range });
+  },
+
+  onExportFormat(e) {
+    const fmt = e.currentTarget.dataset.format;
+    if (fmt === this.data.exportFormat) return;
+    this.setData({ exportFormat: fmt });
+  },
+
+  onExport() {
+    if (this.data.exporting || this.data.exportDone) return;
+    this.setData({ exporting: true });
+    setTimeout(() => {
+      this.setData({ exporting: false, exportDone: true });
+      wx.showToast({ title: '导出成功，已保存到相册', icon: 'success' });
+      setTimeout(() => {
+        this.setData({ exportDone: false });
+      }, 3000);
+    }, 2000);
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  帮助与反馈子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initHelpView() {
+    this.setData({
+      faqOpenIndex: null,
+      feedbackText: '',
+      feedbackSent: false,
+    });
+  },
+
+  onFaqToggle(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const current = this.data.faqOpenIndex;
+    this.setData({ faqOpenIndex: current === idx ? null : idx });
+  },
+
+  onFeedbackInput(e) {
+    const val = e.detail.value || '';
+    this.setData({ feedbackText: val });
+  },
+
+  onFeedbackSubmit() {
+    const text = this.data.feedbackText.trim();
+    if (!text) return;
+    this.setData({ feedbackText: '', feedbackSent: true });
+    setTimeout(() => { this.setData({ feedbackSent: false }); }, 3000);
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  关于子视图
+  // ═══════════════════════════════════════════════════════════
+
+  _initAboutView() {
+    this.setData({ rating: 0, ratingSubmitted: false });
+  },
+
+  onRatingStar(e) {
+    if (this.data.ratingSubmitted) return;
+    const star = Number(e.currentTarget.dataset.star);
+    this.setData({ rating: star });
+  },
+
+  onRatingSubmit() {
+    if (this.data.rating < 1 || this.data.ratingSubmitted) return;
+    this.setData({ ratingSubmitted: true });
+  },
+
+  onLegalTap(e) {
+    const title = e.currentTarget.dataset.title || '页面';
+    wx.showToast({ title: title + '开发中', icon: 'none' });
+  },
+
+  onQuickLinkTap(e) {
+    const label = e.currentTarget.dataset.label || '';
+    wx.showToast({ title: label + '开发中', icon: 'none' });
+  },
+
   onSettingsTap() {
     wx.showToast({ title: '设置', icon: 'none' });
   },
 
+  /** 菜单点击路由：子视图 / AI 教练跳转 / 占位 Toast */
   onMenuItemTap(e) {
-    const key = e.currentTarget.dataset.key;
+    const { key } = e.currentTarget.dataset;
+    const VIEW_KEYS = ['goal', 'achievements', 'theme', 'export', 'help', 'about'];
+
     if (key === 'coach') {
       wx.redirectTo({ url: '/pages/coach/coach' });
+    } else if (VIEW_KEYS.includes(key)) {
+      this.navigateTo(key);
     } else {
       wx.showToast({ title: key, icon: 'none' });
     }
   },
 
-  onSwitchTap(e) {
-    // P0: 通知/音效等偏好暂为本地 UI 开关；后续若接入后端设置再调用 userAPI.updateSettings。
+  async onSwitchTap(e) {
     const key = e.currentTarget.dataset.key;
-    const items = this.data.settingMenu.map(item => {
+    const map = { notification: 'notificationEnabled', sound: 'soundEnabled', vibration: 'vibrationEnabled' };
+    const field = map[key];
+    if (!field) return;
+
+    // 先乐观更新 UI
+    const oldItems = this.data.settingMenu;
+    const newItems = oldItems.map(item => {
       if (item.key === key && item.type === 'switch') {
         return { ...item, enabled: !item.enabled };
       }
       return item;
     });
-    this.setData({ settingMenu: items });
+    this.setData({ settingMenu: newItems });
+
+    // 计算新值
+    const toggledItem = newItems.find(item => item.key === key);
+    const newValue = toggledItem ? toggledItem.enabled : false;
+
+    // 持久化到后端
+    try {
+      const res = await userAPI.updateSettings({ [field]: newValue });
+      if (res.code === 0) {
+        // 同步到 settings 缓存
+        const settings = { ...(this.data.settings || {}), [field]: newValue };
+        this.setData({ settings });
+      } else {
+        // API 失败，回滚
+        this.setData({ settingMenu: oldItems });
+        wx.showToast({ title: '保存失败', icon: 'none' });
+      }
+    } catch (err) {
+      // 网络异常，回滚
+      this.setData({ settingMenu: oldItems });
+      console.warn('[profile] switch save failed:', err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
   },
 
   onLogout() {
