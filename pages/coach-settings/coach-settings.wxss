@@ -1,0 +1,153 @@
+/* ===== 页面布局 ===== */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5F7FA;
+}
+
+.page-scroll {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 导航栏 ===== */
+.nav-shell {
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+}
+
+.nav-left {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8rpx 0;
+}
+
+.nav-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  text-align: center;
+  flex: 1;
+}
+
+.nav-right {
+  width: 64rpx;
+}
+
+/* ===== 设置区块 ===== */
+.settings-section {
+  margin: 32rpx 32rpx 0;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.section-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8A8A9A;
+  margin-bottom: 24rpx;
+}
+
+/* ===== 设置项 ===== */
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid #F0F2F5;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-item:first-child {
+  padding-top: 0;
+}
+
+.settings-item-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-item-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-item-icon {
+  font-size: 32rpx;
+}
+
+.settings-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-item-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin-bottom: 4rpx;
+}
+
+.settings-item-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #8A8A9A;
+  line-height: 1.4;
+}
+
+/* ===== Switch 组件 ===== */
+.settings-switch {
+  flex-shrink: 0;
+  transform: scale(0.8);
+}
+
+/* ===== 可点击操作 ===== */
+.settings-item-action {
+  padding: 12rpx 24rpx;
+  background: #EBF4FF;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+}
+
+.settings-item-action:active {
+  opacity: 0.7;
+}
+
+.settings-item-action-text {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #4A90D9;
+}
+
+/* ===== 底部安全区 ===== */
+.bottom-scroll-space {
+  height: 64rpx;
+}

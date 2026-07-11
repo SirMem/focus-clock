@@ -119,8 +119,9 @@
   margin-left: 32rpx;
 }
 
-.hero-avatar-text {
-  font-size: 72rpx;
+.hero-avatar-img {
+  width: 160rpx;
+  height: 160rpx;
 }
 
 /* ===== 趋势洞察 ===== */

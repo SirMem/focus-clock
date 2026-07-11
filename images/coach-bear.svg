@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Ears -->
+  <circle cx="55" cy="60" r="28" fill="#DCB48C"/>
+  <circle cx="145" cy="60" r="28" fill="#DCB48C"/>
+  <circle cx="55" cy="60" r="16" fill="#F5E6D3"/>
+  <circle cx="145" cy="60" r="16" fill="#F5E6D3"/>
+  <!-- Face -->
+  <ellipse cx="100" cy="115" rx="62" ry="56" fill="#DCB48C"/>
+  <!-- Inner face -->
+  <ellipse cx="100" cy="120" rx="48" ry="42" fill="#F5E6D3"/>
+  <!-- Eyes -->
+  <ellipse cx="80" cy="105" rx="5" ry="7" fill="#4A3728"/>
+  <ellipse cx="120" cy="105" rx="5" ry="7" fill="#4A3728"/>
+  <!-- Eye shine -->
+  <circle cx="78" cy="102" r="2" fill="#fff" opacity="0.8"/>
+  <circle cx="118" cy="102" r="2" fill="#fff" opacity="0.8"/>
+  <!-- Nose -->
+  <ellipse cx="100" cy="125" rx="8" ry="6" fill="#4A3728"/>
+  <!-- Mouth -->
+  <path d="M92 133 C96 140, 104 140, 108 133" stroke="#4A3728" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Blush -->
+  <ellipse cx="70" cy="130" rx="10" ry="6" fill="#FFB5B5" opacity="0.3"/>
+  <ellipse cx="130" cy="130" rx="10" ry="6" fill="#FFB5B5" opacity="0.3"/>
+</svg>

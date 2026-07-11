@@ -1,0 +1,101 @@
+<view class="page-wrapper">
+
+  <!-- ===== 自定义导航栏 ===== -->
+  <view class="nav-shell">
+    <view class="status-spacer" style="height: {{statusBarHeight}}px;"></view>
+    <view class="nav-bar" style="height: {{capsuleHeight}}px;">
+      <view class="nav-left" bind:tap="onNavigateBack">
+        <t-icon name="chevron-left" size="36rpx" color="#1A1A2E" />
+      </view>
+      <view class="nav-title">AI 教练设置</view>
+      <view class="nav-right"></view>
+    </view>
+  </view>
+
+  <scroll-view class="page-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+
+    <!-- ===== 通知设置 ===== -->
+    <view class="settings-section">
+      <text class="section-title">通知与提醒</text>
+
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-item-icon-wrap">
+            <text class="settings-item-icon">🔔</text>
+          </view>
+          <view class="settings-item-info">
+            <text class="settings-item-label">每日建议推送</text>
+            <text class="settings-item-desc">每天推送 AI 教练的个性化建议</text>
+          </view>
+        </view>
+        <switch class="settings-switch" checked="{{dailyTipPush}}" color="#4A90D9" bindchange="onToggleDailyTip" />
+      </view>
+
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-item-icon-wrap">
+            <text class="settings-item-icon">📊</text>
+          </view>
+          <view class="settings-item-info">
+            <text class="settings-item-label">周报推送</text>
+            <text class="settings-item-desc">每周一推送上周专注周报</text>
+          </view>
+        </view>
+        <switch class="settings-switch" checked="{{weeklyReportPush}}" color="#4A90D9" bindchange="onToggleWeeklyReport" />
+      </view>
+    </view>
+
+    <!-- ===== AI 偏好 ===== -->
+    <view class="settings-section">
+      <text class="section-title">AI 偏好</text>
+
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-item-icon-wrap">
+            <text class="settings-item-icon">💬</text>
+          </view>
+          <view class="settings-item-info">
+            <text class="settings-item-label">建议风格</text>
+            <text class="settings-item-desc">当前：{{suggestionStyle === 'gentle' ? '温柔鼓励' : suggestionStyle === 'direct' ? '直接实用' : '平衡适中'}}</text>
+          </view>
+        </view>
+        <view class="settings-item-action" bind:tap="onChangeStyle">
+          <text class="settings-item-action-text">切换</text>
+        </view>
+      </view>
+
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-item-icon-wrap">
+            <text class="settings-item-icon">📝</text>
+          </view>
+          <view class="settings-item-info">
+            <text class="settings-item-label">历史分析深度</text>
+            <text class="settings-item-desc">使用更多专注数据生成更精准的洞察</text>
+          </view>
+        </view>
+        <switch class="settings-switch" checked="{{deepAnalysis}}" color="#4A90D9" bindchange="onToggleDeepAnalysis" />
+      </view>
+    </view>
+
+    <!-- ===== 关于与信息 ===== -->
+    <view class="settings-section">
+      <text class="section-title">关于</text>
+
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-item-icon-wrap">
+            <text class="settings-item-icon">🤖</text>
+          </view>
+          <view class="settings-item-info">
+            <text class="settings-item-label">AI 教练版本</text>
+            <text class="settings-item-desc">v1.0.0 · {{aiPowered ? 'AI 增强' : '基础规则'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-scroll-space"></view>
+  </scroll-view>
+
+</view>

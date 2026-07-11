@@ -6,7 +6,8 @@
     "pages/stats/stats",
     "pages/diary/diary",
     "pages/profile/profile",
-    "pages/coach/coach"
+    "pages/coach/coach",
+    "pages/coach-settings/coach-settings"
   ],
   "window": {
     "navigationStyle": "custom",
