@@ -121,10 +121,6 @@
       <text class="ai-tip">{{currentTip}}</text>
     </view>
 
-    <!-- 🧪 测试按钮：直接调用 session/complete -->
-    <view class="test-section" bind:tap="onTestComplete">
-      <text class="test-label">🧪 测试 session/complete</text>
-    </view>
 
     <view class="bottom-scroll-space"></view>
   </scroll-view>

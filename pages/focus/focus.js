@@ -24,6 +24,16 @@ const MODE_LABELS = {
 
 const STORAGE_KEY = 'pomodoro_state';
 
+// ===== 音频管理 =====
+let _ambientAudio = null;
+let _fadeTimer = null;
+
+const SOUND_FILE_MAP = {
+  cafe: 'public/sounds/cafe_noise_3min.mp3',
+  rain: 'public/sounds/rain.mp3',
+  ocean: 'public/sounds/ocean_waves_3min.mp3',
+};
+
 const DEFAULT_TIP = '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。';
 
 const SOUNDS = [
@@ -31,7 +41,6 @@ const SOUNDS = [
   { id: 'cafe', label: '☕ 咖啡馆' },
   { id: 'rain', label: '🌧️ 雨声' },
   { id: 'ocean', label: '🌊 海浪' },
-  { id: 'white', label: '❄️ 白噪音' },
 ];
 
 const TAB_ITEMS = [
@@ -292,6 +301,9 @@ Page({
     });
 
     this._startInterval();
+
+    // 启动背景音（非「无音效」时）
+    this._startAmbient();
   },
 
   /**
@@ -342,6 +354,10 @@ Page({
    * @private
    */
   async _onTimerComplete(taskId, mode, idempotencyKey) {
+    // 停止背景音并播放完成提示音（在 API 调用前立即执行）
+    this._stopAmbient();
+    this._playCompleteSound();
+
     // P0-2: 防重复提交
     if (this.data.completing) return;
     this.setData({ completing: true });
@@ -381,6 +397,9 @@ Page({
   },
 
   pause() {
+    // 停止背景音（淡出）
+    this._stopAmbient();
+
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -401,6 +420,9 @@ Page({
   },
 
   reset() {
+    // 停止背景音（淡出）
+    this._stopAmbient();
+
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -419,6 +441,9 @@ Page({
   },
 
   skip() {
+    // 停止背景音（淡出）
+    this._stopAmbient();
+
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -461,6 +486,8 @@ Page({
   onModeSwitch(e) {
     const m = e.currentTarget.dataset.mode;
     if (m === this.data.mode) return;
+    // 停止背景音（淡出）
+    this._stopAmbient();
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -485,47 +512,109 @@ Page({
 
   onSoundTap(e) {
     const id = e.currentTarget.dataset.id;
+    // 点击同一个已选中的音效，忽略
+    if (id === this.data.currentSound) return;
+
     this.setData({ currentSound: id });
+
+    // 如果计时器正在运行，实时切换音效
+    if (this.data.timerState === 'running') {
+      this._stopAmbient();
+      if (id !== 'none') {
+        this._startAmbient();
+      }
+    }
+  },
+
+  // ===== 音频播放 =====
+
+  /**
+   * 根据 currentSound 创建 InnerAudioContext 并循环播放背景音（0.5s 淡入）
+   * @private
+   */
+  _startAmbient() {
+    const soundId = this.data.currentSound;
+    if (soundId === 'none' || !SOUND_FILE_MAP[soundId]) return;
+
+    // 清理之前的残留音频（如快速重启）
+    if (_fadeTimer) {
+      clearInterval(_fadeTimer);
+      _fadeTimer = null;
+    }
+    if (_ambientAudio) {
+      _ambientAudio.destroy();
+      _ambientAudio = null;
+    }
+
+    _ambientAudio = wx.createInnerAudioContext();
+    _ambientAudio.obeyMuteSwitch = false; // 静音模式下也可播
+    _ambientAudio.src = SOUND_FILE_MAP[soundId];
+    _ambientAudio.loop = true;
+    _ambientAudio.volume = 0;
+    _ambientAudio.play();
+
+    // 0.5s 淡入：每 50ms volume += 0.05（10 步 = 500ms）
+    let vol = 0;
+    _fadeTimer = setInterval(() => {
+      vol += 0.05;
+      if (vol >= 1) {
+        vol = 1;
+        clearInterval(_fadeTimer);
+        _fadeTimer = null;
+      }
+      if (_ambientAudio) _ambientAudio.volume = vol;
+    }, 50);
+  },
+
+  /**
+   * 停止背景音（0.5s 淡出 → stop → destroy）
+   * @private
+   */
+  _stopAmbient() {
+    // 中断任何正在进行的淡入/淡出
+    if (_fadeTimer) {
+      clearInterval(_fadeTimer);
+      _fadeTimer = null;
+    }
+
+    if (!_ambientAudio) return;
+
+    // 0.5s 淡出：每 50ms volume -= 0.05
+    let vol = _ambientAudio.volume || 1;
+    _fadeTimer = setInterval(() => {
+      vol -= 0.05;
+      if (vol <= 0) {
+        vol = 0;
+        clearInterval(_fadeTimer);
+        _fadeTimer = null;
+        if (_ambientAudio) {
+          _ambientAudio.stop();
+          _ambientAudio.destroy();
+          _ambientAudio = null;
+        }
+        return;
+      }
+      if (_ambientAudio) _ambientAudio.volume = vol;
+    }, 50);
+  },
+
+  /**
+   * 播放计时完成提示音（「叮」一声，不循环，播完自销毁）
+   * @private
+   */
+  _playCompleteSound() {
+    const ctx = wx.createInnerAudioContext();
+    ctx.obeyMuteSwitch = false;
+    ctx.src = 'public/sounds/complete.mp3';
+    ctx.play();
+    ctx.onEnded(() => ctx.destroy());
+    ctx.onError(() => ctx.destroy());
   },
 
   onMenuTap() {
     wx.showToast({ title: '设置', icon: 'none' });
   },
 
-  // 🧪 测试：直接调用 session/complete
-  async onTestComplete() {
-    wx.showLoading({ title: '测试中...' });
-    try {
-      const res = await sessionAPI.complete('focus', 25 * 60, {
-        taskId: this.data.selectedTaskId || undefined,
-        completedPomodoro: true,
-        idempotencyKey: `test_${Date.now()}`,
-      });
-      wx.hideLoading();
-      console.log('[TEST] session/complete 返回:', JSON.stringify(res));
-      // 成功后刷新统计数据
-      if (res.code === 0) {
-        await Promise.all([
-          this._loadTodayStats(),
-          this._loadAvailableTasks(),
-          this._loadCoachData(),
-        ]);
-      }
-      wx.showModal({
-        title: res.code === 0 ? '测试成功' : '测试失败',
-        content: JSON.stringify(res, null, 2),
-        showCancel: false,
-      });
-    } catch (err) {
-      wx.hideLoading();
-      console.error('[TEST] session/complete 异常:', err);
-      wx.showModal({
-        title: '测试异常',
-        content: JSON.stringify({ message: err.message, ...err }, null, 2),
-        showCancel: false,
-      });
-    }
-  },
 
   onTabTap(e) {
     const key = e.currentTarget.dataset.key;
@@ -575,6 +664,17 @@ Page({
   },
 
   onUnload() {
+    // 立即清理音频（不等待淡出完成）
+    if (_fadeTimer) {
+      clearInterval(_fadeTimer);
+      _fadeTimer = null;
+    }
+    if (_ambientAudio) {
+      _ambientAudio.stop();
+      _ambientAudio.destroy();
+      _ambientAudio = null;
+    }
+
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;

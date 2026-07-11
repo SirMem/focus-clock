@@ -459,17 +459,3 @@
   color: #4A90D9;
 }
 
-/* ===== 🧪 测试按钮 ===== */
-.test-section {
-  margin: 24rpx 32rpx;
-  padding: 24rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
-  text-align: center;
-}
-
-.test-label {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #fff;
-}
