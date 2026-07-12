@@ -27,6 +27,8 @@ const STORAGE_KEY = 'pomodoro_state';
 // ===== 音频管理 =====
 let _ambientAudio = null;
 let _fadeTimer = null;
+let _ambientLoading = false;   // 是否正在获取临时链接
+const _tempUrlCache = {};      // cloud:// → HTTPS 缓存
 
 const SOUND_FILE_MAP = {
   cafe: 'cloud://focus-on-d8ghhuk5h910beb78.666f-focus-on-d8ghhuk5h910beb78-1452823164/sounds/cafe_noise_3min.mp3',
@@ -530,13 +532,15 @@ Page({
 
   /**
    * 根据 currentSound 创建 InnerAudioContext 并循环播放背景音（0.5s 淡入）
+   * 使用 wx.cloud.getTempFileURL 将 cloud:// 转为 HTTPS 临时链接，
+   * 解决真机上 InnerAudioContext 对 cloud:// 播放不稳定的问题。
    * @private
    */
-  _startAmbient() {
+  async _startAmbient() {
     const soundId = this.data.currentSound;
     if (soundId === 'none' || !SOUND_FILE_MAP[soundId]) return;
 
-    // 清理之前的残留音频（如快速重启）
+    // 清理之前的残留音频
     if (_fadeTimer) {
       clearInterval(_fadeTimer);
       _fadeTimer = null;
@@ -546,24 +550,49 @@ Page({
       _ambientAudio = null;
     }
 
-    _ambientAudio = wx.createInnerAudioContext();
-    _ambientAudio.obeyMuteSwitch = false; // 静音模式下也可播
-    _ambientAudio.src = SOUND_FILE_MAP[soundId];
-    _ambientAudio.loop = true;
-    _ambientAudio.volume = 0;
-    _ambientAudio.play();
+    _ambientLoading = true;
 
-    // 0.5s 淡入：每 50ms volume += 0.05（10 步 = 500ms）
-    let vol = 0;
-    _fadeTimer = setInterval(() => {
-      vol += 0.05;
-      if (vol >= 1) {
-        vol = 1;
-        clearInterval(_fadeTimer);
-        _fadeTimer = null;
+    try {
+      // 将 cloud:// 转为 HTTPS 临时链接（缓存命中则跳过）
+      let tempUrl = _tempUrlCache[soundId];
+      if (!tempUrl) {
+        const res = await wx.cloud.getTempFileURL({
+          fileList: [SOUND_FILE_MAP[soundId]],
+        });
+        if (!res.fileList || !res.fileList[0] || !res.fileList[0].tempFileURL) {
+          console.error('[Audio] getTempFileURL 返回异常', res);
+          return;
+        }
+        tempUrl = res.fileList[0].tempFileURL;
+        _tempUrlCache[soundId] = tempUrl;
       }
-      if (_ambientAudio) _ambientAudio.volume = vol;
-    }, 50);
+
+      // 如果在等待临时链接期间已被要求停止，放弃本次加载
+      if (!_ambientLoading) return;
+
+      _ambientAudio = wx.createInnerAudioContext();
+      _ambientAudio.obeyMuteSwitch = false; // 静音模式下也可播
+      _ambientAudio.src = tempUrl;
+      _ambientAudio.loop = true;
+      _ambientAudio.volume = 0;
+      _ambientAudio.play();
+
+      // 0.5s 淡入：每 50ms volume += 0.05（10 步 = 500ms）
+      let vol = 0;
+      _fadeTimer = setInterval(() => {
+        vol += 0.05;
+        if (vol >= 1) {
+          vol = 1;
+          clearInterval(_fadeTimer);
+          _fadeTimer = null;
+        }
+        if (_ambientAudio) _ambientAudio.volume = vol;
+      }, 50);
+    } catch (err) {
+      console.error('[Audio] 获取临时链接失败', err);
+    } finally {
+      _ambientLoading = false;
+    }
   },
 
   /**
@@ -571,6 +600,9 @@ Page({
    * @private
    */
   _stopAmbient() {
+    // 取消正在进行的临时链接获取
+    _ambientLoading = false;
+
     // 中断任何正在进行的淡入/淡出
     if (_fadeTimer) {
       clearInterval(_fadeTimer);

@@ -83,8 +83,7 @@
 .sound-scroll {
   display: flex;
   flex-direction: row;
-  white-space: nowrap;
-  overflow: hidden;
+  justify-content: center;
   padding-bottom: 4rpx;
 }
 

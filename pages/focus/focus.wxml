@@ -38,7 +38,7 @@
 
     <!-- 音效选择 -->
     <view class="sound-section">
-      <scroll-view class="sound-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="sound-scroll">
         <view
           wx:for="{{sounds}}"
           wx:key="id"
@@ -48,7 +48,7 @@
         >
           <text>{{item.label}}</text>
         </view>
-      </scroll-view>
+      </view>
     </view>
 
     <!-- 控制按钮（t-icon 替代 data:image/svg+xml） -->

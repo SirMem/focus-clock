@@ -16,7 +16,9 @@
       <text class="legend-label">多</text>
     </view>
   </view>
-  <ec-canvas id="heatmapChart" canvas-id="heatmapChart" ec="{{ heatmapChart }}" class="heatmap-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+  <view class="heatmap-chart-wrap">
+    <ec-canvas id="heatmapChart" canvas-id="heatmapChart" ec="{{ heatmapChart }}" class="heatmap-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+  </view>
 </view>
 
 <!-- ===== 环形图行 ===== -->

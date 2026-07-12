@@ -90,7 +90,6 @@
             style="transform: translateX({{item._swipeX || 0}}px)"
             data-id="{{item.id}}"
             bind:touchstart="onTouchStart"
-            bind:touchmove="onTouchMove"
             bind:touchend="onTouchEnd"
           >
             <!-- 勾选框 -->

@@ -478,6 +478,10 @@ Page({
   },
 
   // ─── 滑动删除手势 ───
+  //
+  // 注意：不绑定 touchmove——iOS 真机上 scroll-view 内部子元素的
+  // touchmove 会与原生滚动手势冲突，导致页面无法滚动。
+  // 改用 touchstart（记录起点）+ touchend（计算位移）双点方式实现。
 
   onTouchStart(e) {
     const touch = e.touches[0];
@@ -485,46 +489,29 @@ Page({
     this._swipeStartY = touch.clientY;
     this._swipeStartTime = Date.now();
     this._swipingId = e.currentTarget.dataset.id;
-
-    // 关闭过渡动画，手指跟手
-    this._setSwipeProp(this._swipingId, '_swipeNoTrans', true);
+    // 不在此处调 setData，避免干扰 scroll-view 的滚动检测
   },
 
-  onTouchMove(e) {
-    if (!this._swipingId) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - this._swipeStartX;
-    const deltaY = touch.clientY - this._swipeStartY;
-
-    // 竖向滑动为主 → 不处理（让 scroll-view 正常滚动）
-    if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) return;
-
-    const maxSwipe = 180;
-    const swipeX = Math.max(-maxSwipe, Math.min(maxSwipe, deltaX));
-    const swipePct = Math.min(1, Math.abs(swipeX) / maxSwipe);
-
-    this._setSwipeProp(this._swipingId, '_swipeX', swipeX);
-    this._setSwipeProp(this._swipingId, '_swipePct', swipePct);
-  },
-
-  onTouchEnd() {
+  onTouchEnd(e) {
     if (!this._swipingId) return;
     const id = this._swipingId;
     this._swipingId = null;
 
-    const tasks = this.data.tasks;
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - this._swipeStartX;
+    const deltaY = touch.clientY - this._swipeStartY;
 
-    const absSwipe = Math.abs(task._swipeX || 0);
-    const swipeX = task._swipeX || 0;
+    // 竖向滑动为主 → 忽略，让 scroll-view 处理
+    if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) return;
 
-    if (absSwipe < 10) {
+    const absDeltaX = Math.abs(deltaX);
+
+    if (absDeltaX < 10) {
       // 轻点 → 仅重置状态，不 toggle（catchtap 事件各自处理）
       this._resetSwipeState(id);
-    } else if (absSwipe > 80) {
+    } else if (absDeltaX > 80) {
       // 超过阈值 → 飞出后删除
-      const flyDir = swipeX > 0 ? 1 : -1;
+      const flyDir = deltaX > 0 ? 1 : -1;
       this._setSwipeProp(id, '_swipeNoTrans', false);
       this._setSwipeProp(id, '_swipeX', flyDir * 400);
       this._setSwipeProp(id, '_swipePct', 1);

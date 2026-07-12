@@ -58,10 +58,7 @@ function initRingChart(canvas, width, height, dpr) {
       itemStyle: { borderRadius: 6 },
       label: { show: false },
       emphasis: { scale: false },
-      data: [
-        { value: 0, name: '专注', itemStyle: { color: '#4A90D9' } },
-        { value: 100, name: '休息', itemStyle: { color: '#FF9500' } },
-      ]
+      data: []
     }]
   };
   chart.setOption(option);
@@ -81,10 +78,7 @@ function initTaskRingChart(canvas, width, height, dpr) {
       itemStyle: { borderRadius: 6 },
       label: { show: false },
       emphasis: { scale: false },
-      data: [
-        { value: 0, name: '已完成', itemStyle: { color: '#4A90D9' } },
-        { value: 100, name: '未完成', itemStyle: { color: '#E0E0E0' } },
-      ]
+      data: []
     }]
   };
   chart.setOption(option);
@@ -95,10 +89,10 @@ function initHeatmapChart(canvas, width, height, dpr) {
   const chart = echarts.init(canvas, null, { width, height, devicePixelRatio: dpr });
   canvas.setChart(chart);
   const option = {
-    grid: { left: 32, right: 16, top: 14, bottom: 24 },
+    grid: { left: 32, right: 16, top: 14, bottom: 28 },
     xAxis: {
       type: 'category',
-      data: ['', '一', '二', '三', '四', '五', '六', '日'],
+      data: [], // 由 _updateHeatmap 动态填充周标签
       splitArea: { show: true },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -106,11 +100,11 @@ function initHeatmapChart(canvas, width, height, dpr) {
     },
     yAxis: {
       type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      data: ['一', '二', '三', '四', '五', '六', '日'],
       splitArea: { show: true },
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { fontSize: 10, color: '#8A8A9A' }
+      axisLabel: { fontSize: 10, color: '#8A8A9A', interval: 0 }
     },
     visualMap: {
       min: 0,
@@ -251,12 +245,15 @@ Component({
 
         const ecComp = this.selectComponent('#focusRestChart');
         if (ecComp && ecComp.chart) {
-          ecComp.chart.setOption({
-            series: [{ data: [
-              { value: Math.max(focus, 1), name: '专注', itemStyle: { color: '#4A90D9' } },
-              { value: Math.max(rest, 1), name: '休息', itemStyle: { color: '#FF9500' } },
-            ] }],
-          });
+          // 全零 → 无数据占位环；否则传真实值（注意：不能用 Math.max(...,1) 垫高，
+          // 否则 100% 时另一侧显示为 1 导致图表永远到不了 100%）
+          const focusData = (focus + rest === 0)
+            ? [{ value: 0, name: '暂无', itemStyle: { color: '#E8E8E8' } }]
+            : [
+                { value: focus, name: '专注', itemStyle: { color: '#4A90D9' } },
+                { value: rest, name: '休息', itemStyle: { color: '#FF9500' } },
+              ];
+          ecComp.chart.setOption({ series: [{ data: focusData }] });
         }
       }
 
@@ -271,12 +268,13 @@ Component({
 
         const ecComp = this.selectComponent('#taskRingChart');
         if (ecComp && ecComp.chart) {
-          ecComp.chart.setOption({
-            series: [{ data: [
-              { value: Math.max(done, 1), name: '已完成', itemStyle: { color: '#4A90D9' } },
-              { value: Math.max(undone, 1), name: '未完成', itemStyle: { color: '#E0E0E0' } },
-            ] }],
-          });
+          const taskData = (done + undone === 0)
+            ? [{ value: 0, name: '暂无', itemStyle: { color: '#E8E8E8' } }]
+            : [
+                { value: done, name: '已完成', itemStyle: { color: '#4A90D9' } },
+                { value: undone, name: '未完成', itemStyle: { color: '#E0E0E0' } },
+              ];
+          ecComp.chart.setOption({ series: [{ data: taskData }] });
         }
       }
     },
@@ -286,9 +284,19 @@ Component({
       const { heatmapData } = this.data;
       if (!Array.isArray(heatmapData) || !heatmapData.length) return;
 
+      // 统一将基准时间归零到午夜，避免 new Date() 带时间分量导致 diffDays 偏差
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const startDate = new Date(today);
       startDate.setDate(today.getDate() - 41);
+
+      // 6 周的 x 轴标签（如 "6/1", "6/8"……）
+      const weekLabels = [];
+      for (let w = 0; w < 6; w++) {
+        const weekStart = new Date(startDate);
+        weekStart.setDate(startDate.getDate() + w * 7);
+        weekLabels.push(`${weekStart.getMonth() + 1}/${weekStart.getDate()}`);
+      }
 
       const data = heatmapData
         .map(item => {
@@ -302,10 +310,12 @@ Component({
           }
 
           if (isNaN(date.getTime())) return null;
+          date.setHours(0, 0, 0, 0); // 归一化到午夜
 
           const diffDays = Math.floor((date - startDate) / (24 * 60 * 60 * 1000));
           if (diffDays < 0 || diffDays > 41) return null;
 
+          // w = 第几周（0-5），d = 星期几（0=周一……6=周日）
           const w = Math.floor(diffDays / 7);
           const dayOfWeek = date.getDay();
           const d = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -319,7 +329,10 @@ Component({
 
       const ecComp = this.selectComponent('#heatmapChart');
       if (ecComp && ecComp.chart) {
-        ecComp.chart.setOption({ series: [{ data }] });
+        ecComp.chart.setOption({
+          xAxis: { data: weekLabels },
+          series: [{ data }],
+        });
       }
     },
   },
