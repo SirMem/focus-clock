@@ -1,6 +1,9 @@
 {
   "usingComponents": {
-    "ec-canvas": "../../components/ec-canvas/ec-canvas"
+    "stats-chart": "/subpkg-stats/components/stats-chart/stats-chart"
+  },
+  "componentPlaceholder": {
+    "stats-chart": "view"
   },
   "navigationStyle": "custom"
 }

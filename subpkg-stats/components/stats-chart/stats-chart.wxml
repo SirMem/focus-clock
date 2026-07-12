@@ -1,0 +1,46 @@
+<!-- ===== 专注趋势面积图 ===== -->
+<view class="trend-card">
+  <text class="trend-title">{{trendTitle}}</text>
+  <view class="trend-chart-wrap">
+    <ec-canvas id="trendChart" canvas-id="trendChart" ec="{{ trendChart }}" class="trend-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+  </view>
+</view>
+
+<!-- ===== 热力图 ===== -->
+<view class="heatmap-card">
+  <view class="heatmap-header">
+    <text class="heatmap-title">专注热力图</text>
+    <view class="heatmap-legend">
+      <text class="legend-label">少</text>
+      <view wx:for="{{heatmapLevels}}" wx:key="*this" class="legend-cell" style="background: {{item}};"></view>
+      <text class="legend-label">多</text>
+    </view>
+  </view>
+  <ec-canvas id="heatmapChart" canvas-id="heatmapChart" ec="{{ heatmapChart }}" class="heatmap-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+</view>
+
+<!-- ===== 环形图行 ===== -->
+<view class="rings-row">
+  <!-- 专注 vs 休息 -->
+  <view class="ring-card">
+    <text class="ring-card-title">专注 vs 休息</text>
+    <view class="ring-chart-wrap">
+      <ec-canvas id="focusRestChart" canvas-id="focusRestChart" ec="{{ focusRestChart }}" class="ring-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+      <view class="ring-center-text">
+        <text class="ring-value">{{focusPercent}}%</text>
+      </view>
+    </view>
+    <text class="ring-sub-label">休息 {{restPercent}}%</text>
+  </view>
+  <!-- 任务完成率 -->
+  <view class="ring-card">
+    <text class="ring-card-title">任务完成率</text>
+    <view class="ring-chart-wrap">
+      <ec-canvas id="taskRingChart" canvas-id="taskRingChart" ec="{{ taskRingChart }}" class="ring-ec" force-use-old-canvas="{{true}}"></ec-canvas>
+      <view class="ring-center-text">
+        <text class="ring-value">{{taskPercent}}%</text>
+      </view>
+    </view>
+    <text class="ring-sub-label">已完成 {{doneTasks}}/{{totalTasks}} 任务</text>
+  </view>
+</view>

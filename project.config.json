@@ -31,14 +31,34 @@
       "outputPath": ""
     }
   },
-  "appid": "wx696d6c0fd6fc79a6",
+  "appid": "wxae51a4311cf44735",
   "projectname": "专注时钟-FocusClock",
   "compileType": "miniprogram",
   "libVersion": "3.7.12",
   "condition": {},
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "folder", "value": "public" },
+      { "type": "folder", "value": "docs" },
+      { "type": "folder", "value": ".git" },
+      { "type": "folder", "value": ".claude" },
+      { "type": "folder", "value": ".codegraph" },
+      { "type": "folder", "value": ".gemini" },
+      { "type": "folder", "value": ".kiro" },
+      { "type": "folder", "value": ".scratch" },
+      { "type": "folder", "value": ".vscode" },
+      { "type": "folder", "value": "node_modules" },
+      { "type": "file", "value": "AGENTS.md" },
+      { "type": "file", "value": "CLAUDE.md" },
+      { "type": "file", "value": "CONTEXT.md" },
+      { "type": "file", "value": "GEMINI.md" },
+      { "type": "file", "value": ".gitignore" },
+      { "type": "file", "value": ".mcp.json" },
+      { "type": "file", "value": "opencode.jsonc" },
+      { "type": "file", "value": "package.json" },
+      { "type": "file", "value": "package-lock.json" }
+    ],
     "include": []
   },
   "editorSetting": {}

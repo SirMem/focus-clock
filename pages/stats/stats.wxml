@@ -46,56 +46,15 @@
       </view>
     </view>
 
-    <!-- ===== 专注趋势面积图 (ECharts) ===== -->
-    <view class="trend-card">
-      <text class="trend-title">{{trendTitle}}</text>
-      <ec-canvas id="trendChart" canvas-id="trendChart" ec="{{ trendChart }}" class="trend-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
-    </view>
-
-    <!-- ===== 专注日历 (ECharts Heatmap) ===== -->
-    <view class="heatmap-card">
-      <view class="heatmap-header">
-        <text class="heatmap-title">专注日历</text>
-        <view class="heatmap-legend">
-          <text class="legend-label">少</text>
-          <view wx:for="{{heatmapLevels}}" wx:key="index" class="legend-cell" style="background: {{item}}"></view>
-          <text class="legend-label">多</text>
-        </view>
-      </view>
-      <ec-canvas id="heatmapChart" canvas-id="heatmapChart" ec="{{ heatmapChart }}" class="heatmap-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
-    </view>
-
-    <!-- ===== 环形图行 (ECharts Ring) ===== -->
-    <view class="rings-row">
-      <!-- 专注 vs 休息 (双环) -->
-      <view class="ring-card">
-        <text class="ring-card-title">专注 vs 休息</text>
-        <view class="ring-chart-wrap">
-          <ec-canvas id="focusRestChart" canvas-id="focusRestChart" ec="{{ focusRestChart }}" class="ring-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
-        </view>
-        <view class="ring-legend">
-          <view class="legend-item">
-            <view class="legend-dot" style="background: #4A90D9;"></view>
-            <text class="legend-text">{{focusPercent}}%</text>
-          </view>
-          <view class="legend-item">
-            <view class="legend-dot" style="background: #FF9500;"></view>
-            <text class="legend-text">{{restPercent}}%</text>
-          </view>
-        </view>
-      </view>
-      <!-- 任务完成率 (单环) -->
-      <view class="ring-card">
-        <text class="ring-card-title">任务完成率</text>
-        <view class="ring-chart-wrap">
-          <ec-canvas id="taskRingChart" canvas-id="taskRingChart" ec="{{ taskRingChart }}" class="ring-ec" forceUseOldCanvas="{{true}}"></ec-canvas>
-          <view class="ring-center-text">
-            <text class="ring-value">{{taskPercent}}%</text>
-          </view>
-        </view>
-        <text class="ring-sub-label">已完成 {{doneTasks}}/{{totalTasks}} 任务</text>
-      </view>
-    </view>
+    <!-- ===== ECharts 图表（分包组件自动渲染） ===== -->
+    <stats-chart
+      period="{{period}}"
+      todayStats="{{todayStats}}"
+      weeklyStats="{{weeklyStats}}"
+      monthlyStats="{{monthlyStats}}"
+      todayDetail="{{todayDetail}}"
+      heatmapData="{{heatmapData}}"
+    />
 
     <!-- ===== 今日评分卡片 ===== -->
     <view class="score-card">

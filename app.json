@@ -9,6 +9,14 @@
     "pages/coach/coach",
     "pages/coach-settings/coach-settings"
   ],
+  "subPackages": [
+    {
+      "root": "subpkg-stats",
+      "pages": [
+        "pages/placeholder/placeholder"
+      ]
+    }
+  ],
   "window": {
     "navigationStyle": "custom",
     "backgroundColor": "#F5F7FA",
