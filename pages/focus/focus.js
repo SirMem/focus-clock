@@ -29,9 +29,9 @@ let _ambientAudio = null;
 let _fadeTimer = null;
 
 const SOUND_FILE_MAP = {
-  cafe: 'public/sounds/cafe_noise_3min.mp3',
-  rain: 'public/sounds/rain.mp3',
-  ocean: 'public/sounds/ocean_waves_3min.mp3',
+  cafe: 'cloud://focus-on-d8ghhuk5h910beb78.666f-focus-on-d8ghhuk5h910beb78-1452823164/sounds/cafe_noise_3min.mp3',
+  rain: 'cloud://focus-on-d8ghhuk5h910beb78.666f-focus-on-d8ghhuk5h910beb78-1452823164/sounds/rain.mp3',
+  ocean: 'cloud://focus-on-d8ghhuk5h910beb78.666f-focus-on-d8ghhuk5h910beb78-1452823164/sounds/ocean_waves_3min.mp3',
 };
 
 const DEFAULT_TIP = '番茄工作法能帮你保持专注，每25分钟全力投入，休息时彻底放松。';
@@ -605,7 +605,7 @@ Page({
   _playCompleteSound() {
     const ctx = wx.createInnerAudioContext();
     ctx.obeyMuteSwitch = false;
-    ctx.src = 'public/sounds/complete.mp3';
+    ctx.src = 'cloud://focus-on-d8ghhuk5h910beb78.666f-focus-on-d8ghhuk5h910beb78-1452823164/sounds/complete.mp3';
     ctx.play();
     ctx.onEnded(() => ctx.destroy());
     ctx.onError(() => ctx.destroy());
