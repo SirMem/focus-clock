@@ -49,6 +49,7 @@
       { "type": "folder", "value": ".scratch" },
       { "type": "folder", "value": ".vscode" },
       { "type": "folder", "value": "node_modules" },
+      { "type": "folder", "value": "miniprogram_npm/@babel" },
       { "type": "file", "value": "AGENTS.md" },
       { "type": "file", "value": "CLAUDE.md" },
       { "type": "file", "value": "CONTEXT.md" },
