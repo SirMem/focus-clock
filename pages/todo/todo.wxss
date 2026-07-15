@@ -432,12 +432,18 @@
 
 .task-sheet {
   width: 100%;
-  max-height: 88vh;
+  /* height 由 JS 写入 px，避免 88vh + flex 导致 scroll-view 高度塌缩 */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   border-radius: 36rpx 36rpx 0 0;
   background: #F5F7FA;
   box-shadow: 0 -12rpx 40rpx rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.sheet-top {
+  flex-shrink: 0;
 }
 
 .sheet-handle {
@@ -545,8 +551,9 @@
 }
 
 .sheet-scroll {
-  flex: 1;
-  height: 0;
+  /* 高度由 JS 写入明确 px；不要依赖 flex:1/height:0 让微信 scroll-view 自己猜 */
+  flex-shrink: 0;
+  width: 100%;
   padding: 0 32rpx;
   box-sizing: border-box;
 }
@@ -717,8 +724,10 @@
   flex-shrink: 0;
   display: flex;
   gap: 20rpx;
-  padding: 20rpx 32rpx 34rpx;
+  /* 底边距由 JS 写入：基础 17px(~34rpx) + safe-area */
+  padding: 20rpx 32rpx 0;
   background: linear-gradient(to top, #fff 80%, rgba(255,255,255,0));
+  box-sizing: border-box;
 }
 
 .cancel-btn,

@@ -144,33 +144,47 @@
 
   </view>
 
-  <!-- ===== Task v2 新建任务弹窗 ===== -->
+  <!-- ===== Task v2 新建任务弹窗（Bottom Sheet：顶栏固定 / 中间可滚 / 底栏钉死） ===== -->
   <view wx:if="{{showTaskModal}}" class="modal-mask" bind:tap="closeTaskModal">
-    <view class="task-sheet" catchtap="stopModalTap">
-      <view class="sheet-handle"></view>
-      <view class="sheet-header">
-        <view>
-          <text class="sheet-title">{{isEditing ? '编辑任务' : '新建任务'}}</text>
-          <text class="sheet-subtitle">{{isEditing ? '修改任务细节，或调整完成状态' : '把任务规划清楚，再开始专注'}}</text>
-        </view>
-        <view class="sheet-close" bind:tap="closeTaskModal">
-          <t-icon name="close" size="36rpx" color="#8A8A9A" />
-        </view>
-      </view>
-
-      <!-- 编辑模式：完成状态切换 -->
-      <view wx:if="{{isEditing}}" class="edit-status-bar" catchtap="onEditStatusToggle">
-        <view class="edit-status-left">
-          <view class="edit-status-circle {{taskForm.isDone ? 'edit-status-circle-done' : ''}}">
-            <t-icon wx:if="{{taskForm.isDone}}" name="check" size="20rpx" color="#fff" />
+    <view
+      class="task-sheet"
+      style="height: {{sheetHeightPx}}px;"
+      catchtap="stopModalTap"
+    >
+      <!-- 顶部固定区：用于量高，不参与滚动 -->
+      <view class="sheet-top">
+        <view class="sheet-handle"></view>
+        <view class="sheet-header">
+          <view>
+            <text class="sheet-title">{{isEditing ? '编辑任务' : '新建任务'}}</text>
+            <text class="sheet-subtitle">{{isEditing ? '修改任务细节，或调整完成状态' : '把任务规划清楚，再开始专注'}}</text>
           </view>
-          <text class="edit-status-label {{taskForm.isDone ? 'edit-status-label-done' : ''}}">
-            {{taskForm.isDone ? '已完成' : '标记为已完成'}}
-          </text>
+          <view class="sheet-close" bind:tap="closeTaskModal">
+            <t-icon name="close" size="36rpx" color="#8A8A9A" />
+          </view>
+        </view>
+
+        <!-- 编辑模式：完成状态切换 -->
+        <view wx:if="{{isEditing}}" class="edit-status-bar" catchtap="onEditStatusToggle">
+          <view class="edit-status-left">
+            <view class="edit-status-circle {{taskForm.isDone ? 'edit-status-circle-done' : ''}}">
+              <t-icon wx:if="{{taskForm.isDone}}" name="check" size="20rpx" color="#fff" />
+            </view>
+            <text class="edit-status-label {{taskForm.isDone ? 'edit-status-label-done' : ''}}">
+              {{taskForm.isDone ? '已完成' : '标记为已完成'}}
+            </text>
+          </view>
         </view>
       </view>
 
-      <scroll-view class="sheet-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <!-- 中间滚动区：必须给明确 px 高度，微信 scroll-view 在 flex 里不可靠 -->
+      <scroll-view
+        class="sheet-scroll"
+        style="height: {{sheetScrollHeightPx}}px;"
+        scroll-y
+        enhanced
+        show-scrollbar="{{false}}"
+      >
         <view class="form-section">
           <text class="form-label">任务标题</text>
           <input
@@ -287,7 +301,8 @@
         <view class="sheet-bottom-space"></view>
       </scroll-view>
 
-      <view class="sheet-actions">
+      <!-- 底部操作栏：钉在弹层底部 + 安全区 -->
+      <view class="sheet-actions" style="padding-bottom: {{sheetActionsPaddingBottomPx}}px;">
         <view class="cancel-btn" bind:tap="closeTaskModal">取消</view>
         <view class="save-btn {{savingTask ? 'save-disabled' : ''}}" bind:tap="saveTaskFromModal">
           {{savingTask ? '保存中...' : (isEditing ? '保存修改' : '保存任务')}}

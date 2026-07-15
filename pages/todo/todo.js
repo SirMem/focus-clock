@@ -54,6 +54,53 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Bottom Sheet 像素布局（纯函数，便于本地校验）。
+ * 约束：sheet = top + scroll + actions；scroll 必须有明确正高度。
+ */
+function computeTaskSheetLayout({
+  windowHeight,
+  windowWidth,
+  screenHeight,
+  safeAreaBottom,
+  isEditing,
+}) {
+  const wh = windowHeight || 667;
+  const ww = windowWidth || 375;
+  const sh = screenHeight || wh;
+  const rpx2px = (rpx) => (rpx / 750) * ww;
+  const safeBottom = (typeof safeAreaBottom === 'number')
+    ? Math.max(0, sh - safeAreaBottom)
+    : 0;
+
+  const sheetHeightPx = Math.floor(wh * 0.88);
+  const sheetActionsPaddingBottomPx = Math.round(rpx2px(34) + safeBottom);
+  // 首帧估算故意偏保守（top/actions 略大），避免把底栏挤出可视区
+  const actionsEstimatePx = rpx2px(20 + 88) + sheetActionsPaddingBottomPx;
+  const topEstimatePx = rpx2px(isEditing ? 300 : 200);
+  const sheetScrollHeightPx = Math.max(
+    120,
+    Math.floor(sheetHeightPx - topEstimatePx - actionsEstimatePx)
+  );
+
+  return {
+    sheetHeightPx,
+    sheetScrollHeightPx,
+    sheetActionsPaddingBottomPx,
+    _debug: {
+      safeBottom,
+      topEstimatePx,
+      actionsEstimatePx,
+      sum: topEstimatePx + sheetScrollHeightPx + actionsEstimatePx,
+    },
+  };
+}
+
+// 供本地 node 校验 / 调试复用
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.computeTaskSheetLayout = computeTaskSheetLayout;
+}
+
 Page({
   data: {
     statusBarHeight: 44,
@@ -76,6 +123,10 @@ Page({
     isEditing: false,
     editingTaskId: null,
     taskForm: createEmptyForm(),
+    // Bottom Sheet 像素高度（scroll-view 必须有明确 px 高度）
+    sheetHeightPx: 600,
+    sheetScrollHeightPx: 360,
+    sheetActionsPaddingBottomPx: 17,
     // 🆕 真实今日统计数据（来自 stats/today）
     realTotalHours: 0,
     realTotalMins: 0,
@@ -216,7 +267,7 @@ Page({
       isEditing: false,
       editingTaskId: null,
       taskForm: createEmptyForm(),
-    });
+    }, () => this._layoutTaskSheet());
     this._originalForm = null;
   },
 
@@ -246,6 +297,51 @@ Page({
   },
 
   stopModalTap() {},
+
+  /**
+   * 计算 Bottom Sheet 总高 / 中间 scroll-view 高 / 底栏安全区内边距。
+   * 微信 scroll-view 在 flex 子项里高度经常塌成 0 或随内容撑开，
+   * 必须写入明确 px 高度，按钮才能钉底、表单才能滚动。
+   */
+  _layoutTaskSheet() {
+    const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const metrics = computeTaskSheetLayout({
+      windowHeight: info.windowHeight || 667,
+      windowWidth: info.windowWidth || 375,
+      screenHeight: info.screenHeight || info.windowHeight || 667,
+      safeAreaBottom: info.safeArea ? info.safeArea.bottom : null,
+      isEditing: this.data.isEditing,
+    });
+
+    this.setData({
+      sheetHeightPx: metrics.sheetHeightPx,
+      sheetScrollHeightPx: metrics.sheetScrollHeightPx,
+      sheetActionsPaddingBottomPx: metrics.sheetActionsPaddingBottomPx,
+    }, () => {
+      const afterRender = typeof wx.nextTick === 'function'
+        ? (fn) => wx.nextTick(fn)
+        : (fn) => setTimeout(fn, 16);
+
+      afterRender(() => {
+        const query = wx.createSelectorQuery();
+        query.select('.sheet-top').boundingClientRect();
+        query.select('.sheet-actions').boundingClientRect();
+        query.exec((res) => {
+          const topRect = res && res[0];
+          const actionsRect = res && res[1];
+          if (!topRect || !actionsRect || !topRect.height || !actionsRect.height) return;
+
+          const nextScrollPx = Math.max(
+            120,
+            Math.floor(metrics.sheetHeightPx - topRect.height - actionsRect.height)
+          );
+          if (Math.abs(nextScrollPx - this.data.sheetScrollHeightPx) > 1) {
+            this.setData({ sheetScrollHeightPx: nextScrollPx });
+          }
+        });
+      });
+    });
+  },
 
   // ─── 脏数据检测 ───
 
@@ -319,7 +415,7 @@ Page({
       editingTaskId: id,
       taskForm: form,
       showTaskModal: true,
-    });
+    }, () => this._layoutTaskSheet());
   },
 
   onEditStatusToggle() {
